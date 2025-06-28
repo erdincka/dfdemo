@@ -6,7 +6,7 @@ RUN apt update && apt install -y git python3-dev gcc tree
 # fix init-script
 RUN sed -i '/after cldb /a     sleep 30; echo mapr | maprlogin password -user mapr' /usr/bin/init-script
 
-EXPOSE 9443 8443 8501 8502 2222
+EXPOSE 9443 8443 3000 3001 2222
 
 COPY . /app
 WORKDIR /app

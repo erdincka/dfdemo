@@ -130,12 +130,14 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "httpx" },
+    { name = "mapr-streams-python" },
     { name = "streamlit" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "httpx", specifier = ">=0.28.1" },
+    { name = "mapr-streams-python", specifier = ">=2.6.0" },
     { name = "streamlit", specifier = ">=1.46.1" },
 ]
 
@@ -247,6 +249,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/bf/ce/46fbd9c8119cfc358
 wheels = [
     { url = "https://files.pythonhosted.org/packages/01/0e/b27cdbaccf30b890c40ed1da9fd4a3593a5cf94dae54fb34f8a4b74fcd3f/jsonschema_specifications-2025.4.1-py3-none-any.whl", hash = "sha256:4653bffbd6584f7de83a67e0d620ef16900b390ddc7939d56684d6c81e33f1af", size = 18437, upload-time = "2025-04-23T12:34:05.422Z" },
 ]
+
+[[package]]
+name = "mapr-streams-python"
+version = "2.6.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3c/10/69db6dbcc15391e183db8b8e9733259bd2282a2c2e4d281d4c11cb2e086b/mapr-streams-python-2.6.0.tar.gz", hash = "sha256:b6e59d1cbc863078c902b77cde6bb047307328d016e15a3ba1d35b47fb29738b", size = 139697, upload-time = "2025-04-29T19:32:30.783Z" }
 
 [[package]]
 name = "markupsafe"

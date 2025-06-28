@@ -11,7 +11,7 @@ class StreamlitLogHandler(logging.Handler):
         msg = self.format(record)
         self.widget_update_func(msg)
 
-st.set_page_config(page_title="IoT Devices", layout="wide")
+st.set_page_config(page_title="HPE Data Fabric Demo", layout="wide")
 logging.basicConfig(level=logging.INFO)
 logger = get_logger(__name__)
 def add_to_logs(msg):
@@ -19,7 +19,9 @@ def add_to_logs(msg):
 
 
 def main():
-    st.title("Hello from dfdemo!")
+    st.title("Hello from dfa b!")
+
+    logger.info("Started!")
 
     streamlit_log_handler = StreamlitLogHandler(add_to_logs)
     streamlit_log_handler.setLevel(logging.INFO)
@@ -28,4 +30,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    if "__streamlitmagic__" not in locals():
+        import streamlit.web.bootstrap
+        streamlit.web.bootstrap.run(__file__, False, [], {})
