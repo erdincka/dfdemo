@@ -1,0 +1,13 @@
+[project]
+name = "dfdemo"
+version = "0.1.0"
+description = "Demo Sandbox with Data Fabric"
+readme = "README.md"
+authors = [
+    { name = "Erdinc Kaya", email = "erdincka@msn.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28.1",
+    "streamlit>=1.46.1",
+]

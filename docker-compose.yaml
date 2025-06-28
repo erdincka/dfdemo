@@ -1,0 +1,37 @@
+services:
+  dfdemo:
+    platform: linux/amd64
+    image: erdincka/dfdemo:latest
+    container_name: dfdemo
+    restart: unless-stopped
+    environment:
+      - clusterName=dfdemo.io
+      - isSecure=true
+      - MAPR_TZ=Europe/London
+      - TZ=Europe/London
+    ports:
+      - "8501:8501"  ## required to use app UI
+      - "8502:8502"  ## optional for secondary port
+      # - "9443:9443"  ## optional for Installer UI
+      - "8443:8443"  ## optional for MCS
+      # - "2222:22"  ## optional for SSH
+    cap_add:
+      - SYS_ADMIN
+    privileged: true
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    entrypoint: ["/app/start.sh"]
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    restart: unless-stopped
+    environment:
+      - MINIO_ROOT_USER=dfdemo
+      - MINIO_ROOT_PASSWORD=dfdemo
+    ports:
+      - "9000:9000"
+    # volumes:
+    #   - minio-data:/data
+    command: server /data
