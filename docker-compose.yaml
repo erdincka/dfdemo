@@ -5,16 +5,16 @@ services:
     container_name: dfdemo
     restart: unless-stopped
     environment:
-      - clusterName=dfdemo.io
+      - clusterName=dfab.io
       - isSecure=true
       - MAPR_TZ=Europe/London
       - TZ=Europe/London
     ports:
       - "8501:8501"  ## required to use app UI
       - "8502:8502"  ## optional for secondary port
-      # - "9443:9443"  ## optional for Installer UI
+      - "9443:9443"  ## optional for Installer UI
       - "8443:8443"  ## optional for MCS
-      # - "2222:22"  ## optional for SSH
+      - "2222:22"  ## optional for SSH
     cap_add:
       - SYS_ADMIN
     privileged: true
@@ -24,14 +24,17 @@ services:
     entrypoint: ["/app/start.sh"]
 
   minio:
+    platform: linux/amd64
     image: minio/minio:latest
     container_name: minio
     restart: unless-stopped
     environment:
-      - MINIO_ROOT_USER=dfdemo
-      - MINIO_ROOT_PASSWORD=dfdemo
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
     ports:
       - "9000:9000"
-    # volumes:
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     #   - minio-data:/data
     command: server /data
