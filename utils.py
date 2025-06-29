@@ -6,7 +6,7 @@ import streamlit as st
 from config import logger
 
 def run_command(command):
-    logger.info(f"Running: {command}")
+    logger.debug(f"Running: {command}")
     try:
         result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         logger.info(result.stdout.decode())
@@ -15,7 +15,7 @@ def run_command(command):
 
 
 def set_service(service: dict, running: bool):
-    logger.info(f"Got {service} to {running}")
+    logger.debug(f"Got {service} to {running}")
     if running:
         cmd_name = service["command"].split(" ").pop()
         killcmd = "kill -9 $(ps -ef | grep " + cmd_name + " | grep -v grep | awk '{ print $2 }')"
@@ -39,11 +39,15 @@ def not_implemented():
 
 def query_nasa(search_term: str):
     params = { "media_type": "image", "q": search_term}
-    r = httpx.get("https://images-api.nasa.gov/search", params=params)
-    if r.status_code == 200:
-        data = r.json()
-        # st.json(data, expanded=False)
-        return parse_data(data)
+    try: 
+        r = httpx.get("https://images-api.nasa.gov/search", params=params)
+        if r.status_code == 200:
+            data = r.json()
+            # st.json(data, expanded=False)
+            return parse_data(data)
+
+    except Exception as e:
+        logger.error(e)
 
     return pd.DataFrame()
 

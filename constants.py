@@ -1,7 +1,3 @@
-services = [
-    { 'name': 'LLM', 'command': 'echo will be running vllm'},
-]
-
 sources = [
     'file',
     'api',
@@ -13,9 +9,16 @@ targets = [
     'posix',
     'hive',
     'iceberg',
+    'kafkatopic'
 ]
 
 write_as = [
     'json',
     'parquet',
+]
+
+locations = [
+    'volume',
+    'db',
+    'bucket',
 ]
