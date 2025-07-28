@@ -23,18 +23,6 @@ def set_service(service: dict, running: bool):
     else:
         run_command(service['command'])
 
-
-def select_source():
-    logger.debug(f"Using {st.session_state['source']} as source")
-    st.session_state['source_dataframe'] = None
-
-
-def select_target():
-    logger.debug(f"Will output to {st.session_state['source']}")
-
-
-def not_implemented():
-    logger.warning(f"Will be done later!")
     
 
 def query_nasa(search_term: str):
