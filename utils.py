@@ -1,9 +1,14 @@
+import json
 import subprocess
+from urllib.parse import urlparse
 import httpx
 import pandas as pd
 import streamlit as st
+from faker import Faker
 
 from config import logger
+from constants import DEMO_STREAM
+from streams import produce
 
 def run_command(command):
     logger.debug(f"Running: {command}")
@@ -57,3 +62,31 @@ def parse_data(data):
         logger.error(error)
         st.error(error)
         return pd.DataFrame()
+
+
+def get_public_hostname():
+    from streamlit_js_eval import streamlit_js_eval
+
+    # This returns the result of `window.location.origin` from browser
+    result = streamlit_js_eval(js_expressions="window.location.origin", key="get_url")
+
+    if result:
+        logger.debug(f"Detected public URL: {result}")
+        return urlparse(result).hostname
+    else:
+        st.warning("Could not detect public URL yet.")
+        return ""
+
+
+def sample_to_incoming():
+    for _ in range(10):
+        msg = Faker().profile(fields=['name', 'address', 'job', 'sex'])
+        if produce(DEMO_STREAM, 'incoming', json.dumps(msg)):
+            logger.info(f"Published {msg}")
+
+@st.dialog("Code", width='large')
+def code_viewer(code: str, extra_code: str = ""):
+    st.code(code)
+    if extra_code:
+        st.code(extra_code)
+

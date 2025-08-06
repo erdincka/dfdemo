@@ -22,12 +22,20 @@ secretKey = ${secret_key}
 """ > /home/mapr/.aws/credentials
 chown -R mapr:mapr /home/mapr/.aws/
 
+echo "[ $(date) ] Mounting /mapr"
 # Mount locally
 mount -t nfs -o nolock mapr:/mapr /mapr
+
+echo "[ $(date) ] Setting up mc for S3"
 # S3 alias for mc
 /opt/mapr/bin/mc alias set df https://dfab.io:9000 $access_key $secret_key
 /opt/mapr/bin/mc mb df/demobk
 
+echo "[ $(date) ] Creating demo volume, bucket, and stream"
+maprcli volume create -name demovol -path /demovol -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
+maprcli stream create -path /demovol/demostream -ttl 86400 -produceperm p -consumeperm p -topicperm p
+
+echo "[ $(date) ] Running UI"
 LD_LIBRARY_PATH=/opt/mapr/lib nohup /app/.venv/bin/streamlit run /app/main.py &
 
 echo "[ $(date) ] CREDENTIALS:"

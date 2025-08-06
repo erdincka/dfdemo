@@ -1,8 +1,8 @@
 sources = [
-    'file',
-    'api',
-    'sales',
-    'kafkatopic',
+    'File',
+    'NASA API',
+    'Sales DB',
+    'Stream',
 ]
 
 targets = [
@@ -24,3 +24,5 @@ write_as = [
 #     'db',
 #     'bucket',
 # ]
+
+DEMO_STREAM = '/demovol/demostream'

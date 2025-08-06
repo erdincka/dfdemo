@@ -2,8 +2,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-MAX_POLL_TIME = 3
-
 def produce(stream: str, topic: str, message: str):
     from confluent_kafka import Producer
 
@@ -11,8 +9,9 @@ def produce(stream: str, topic: str, message: str):
     p = Producer({"streams.producer.default.stream": stream})
 
     try:
-        logger.info("sending message: %s", message)
+        # logger.info("sending message: %s", message)
         p.produce(topic, message.encode("utf-8"))
+        logger.info('sent message: %s', message)
 
     except Exception as error:
         logger.warning(error)
@@ -24,10 +23,11 @@ def produce(stream: str, topic: str, message: str):
     return True
 
 
-def consume(stream: str, topic: str, consumer_group: str):
+def consume(stream: str, topic: str, consumer_group: str = 'demo-consumer'):
     from confluent_kafka import Consumer, KafkaError
+    MAX_POLL_TIME = 2
 
-    logger.info("Stream: %s Topic: %s", stream, topic)
+    logger.info("Consuming from Stream: %s Topic: %s", stream, topic)
 
     consumer = Consumer(
         {"group.id": consumer_group, "default.topic.config": {"auto.offset.reset": "earliest"}}
@@ -56,3 +56,4 @@ def consume(stream: str, topic: str, consumer_group: str):
 
     finally:
         consumer.close()
+

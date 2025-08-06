@@ -11,19 +11,16 @@ import os
 os.environ["AWS_REQUEST_CHECKSUM_CALCULATION"] = "when_required"
 os.environ["AWS_RESPONSE_CHECKSUM_VALIDATION"] = "when_required"
 
-# Read AWS credentials from ~/.aws/credentials
-config = configparser.ConfigParser()
-config.read('/home/mapr/.aws/credentials')
-aws_endpoint = "https://dfab.io:9000"
-aws_access_key = config['default']['aws_access_key_id']
-aws_secret_key = config['default']['aws_secret_access_key']
-
 def get_client():
+    # Read AWS credentials from ~/.aws/credentials
+    config = configparser.ConfigParser()
+    config.read('/home/mapr/.aws/credentials')
+
     return boto3.client(
         's3',
-        aws_access_key_id=aws_access_key,
-        aws_secret_access_key=aws_secret_key,
-        endpoint_url=aws_endpoint,
+        aws_access_key_id=config['default']['aws_access_key_id'],
+        aws_secret_access_key=config['default']['aws_secret_access_key'],
+        endpoint_url="https://dfab.io:9000",
         use_ssl=True,
         # verify=False
         verify='/opt/mapr/conf/ca/chain-ca.pem'
@@ -85,3 +82,15 @@ def list_buckets():
     except Exception as e:
         logger.error(e)
         raise e
+
+def list_objects(bucket: str):
+    try: 
+        client = get_client()
+        objects = client.list_objects(Bucket=bucket)
+        logger.debug(objects)
+        return [ { 'Object Key': o['Key'], 'Size': o['Size'] } for o in objects['Contents'] ]
+
+    except Exception as e:
+        logger.error(e)
+        raise e
+
