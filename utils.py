@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import socket
 from urllib.parse import urlparse
@@ -87,11 +88,12 @@ def sample_to_incoming():
         if produce(DEMO_STREAM, 'incoming', json.dumps(msg)):
             logger.info(f"Published {msg}")
 
-@st.dialog("Code", width='large')
-def code_viewer(code: str, extra_code: str = ""):
-    st.code(code)
-    if extra_code:
-        st.code(extra_code)
+
+# @st.dialog("Code", width='large')
+# def code_viewer(code: str, extra_code: str = ""):
+#     st.code(code)
+#     if extra_code:
+#         st.code(extra_code)
 
 
 # def nav_to(url):
@@ -145,5 +147,9 @@ def APPs(hostname: str):
     return res
 
 
-def list_bucket_table():
-    return st.table(s3.list_bucket(st.session_state['selected_bucket'])) if st.session_state['selected_bucket'] else None
+def set_bucket_list():
+    st.session_state['bucket_content'] = s3.list_bucket(st.session_state['selected_bucket']) if st.session_state['selected_bucket'] else None
+
+
+def get_app_folders():
+    return os.listdir('/mapr/dfab.io/apps/')
