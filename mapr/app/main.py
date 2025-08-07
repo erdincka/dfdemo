@@ -1,7 +1,6 @@
 import inspect
 import json
 import logging
-import os
 from pathlib import Path
 import streamlit as st
 import pandas as pd
@@ -28,7 +27,7 @@ def main():
     apps = utils.APPs(hostname)
 
     sb = st.sidebar
-    sb.toggle("Enable AI Model", key='use_ai')
+    # sb.toggle("Enable AI Model", key='use_ai')
     for lnk in urls + apps:
         c1,c2 = sb.columns([1, 3])
         c1.write(lnk['name'])

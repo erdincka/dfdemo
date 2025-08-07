@@ -32,18 +32,36 @@ services:
       - /etc/localtime:/etc/localtime:ro
     entrypoint: ["/entrypoint.sh"]
 
-  # minio:
-  #   platform: linux/amd64
-  #   image: minio/minio:latest
-  #   container_name: minio
-  #   restart: unless-stopped
-  #   environment:
-  #     - MINIO_ROOT_USER=minioadmin
-  #     - MINIO_ROOT_PASSWORD=minioadmin
-  #   ports:
-  #     - "9000:9000"
-  #   volumes:
-  #     - /etc/timezone:/etc/timezone:ro
-  #     - /etc/localtime:/etc/localtime:ro
-  #   #   - minio-data:/data
-  #   command: server /data
+  mysql:
+    platform: linux/amd64
+    image: mysql/mysql-server:8.0
+    container_name: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: 'demodb'
+      MYSQL_USER: 'mysql'
+      MYSQL_PASSWORD: 'Admin123.'
+      MYSQL_ROOT_PASSWORD: 'Admin123.'
+    volumes:
+      - mysql:/var/lib/mysql
+      - ./mysqld.cnf:/etc/mysql/conf.d/mysqld.cnf
+
+  minio:
+    platform: linux/amd64
+    image: minio/minio:latest
+    container_name: minio
+    restart: unless-stopped
+    environment:
+      - MINIO_ROOT_USER='admin'
+      - MINIO_ROOT_PASSWORD='Admin123.'
+    # ports:
+    #   - "9000:9000"
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - minio-data:/data
+    command: server /data
+
+volumes:
+  mysql: {}
+  minio-data: {}

@@ -6,11 +6,11 @@ services:
       dockerfile: Dockerfile
       args:
         # - MAPR_REPO=https://package.ezmeral.hpe.com/releases/
-        - MAPR_REPO=http://10.1.1.4/mapr # this is my local repo, use the line above for official release
+        - MAPR_REPO=http://10.1.1.4/mapr # this is my local repo, default is the line above
         # Don't change these unless you are using a newer sandbox image
+        - UBUNTU_VERSION=22.04
         - NIFI_VERSION=1.28.0
         - MYSQL_CONNECTOR_VERSION=9.3.0
-        - UBUNTU_VERSION=22.04
       platforms:
         - "linux/amd64"
     container_name: dfdemo
@@ -20,6 +20,7 @@ services:
       - isSecure=true
       - MAPR_TZ=Europe/London
       - TZ=Europe/London
+      # CHANGE THIS WITH YOUR DOCKER HOSTNAME/FQDN
       - NIFI_WEB_PROXY_HOST=docker.kayalab.uk:12443
       - NIFI_VERSION=1.28.0
       - NIFI_USER=admin
@@ -40,19 +41,36 @@ services:
       - /etc/localtime:/etc/localtime:ro
     entrypoint: ["/entrypoint.sh"]
 
-#   mysql:
-#     platform: linux/amd64
-#     image: mysql/mysql-server:8.0
-#     container_name: mysql
-#     restart: unless-stopped
-#     environment:
-#       MYSQL_DATABASE: 'demodb'
-#       MYSQL_USER: 'mysql'
-#       MYSQL_PASSWORD: 'Admin123.'
-#       MYSQL_ROOT_PASSWORD: Admin123.
-#     volumes:
-#       - mysql:/var/lib/mysql
-#       - ./mysqld.cnf:/etc/mysql/conf.d/mysqld.cnf
+  mysql:
+    platform: linux/amd64
+    image: mysql/mysql-server:8.0
+    container_name: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: 'demodb'
+      MYSQL_USER: 'mysql'
+      MYSQL_PASSWORD: 'Admin123.'
+      MYSQL_ROOT_PASSWORD: 'Admin123.'
+    volumes:
+      - mysql:/var/lib/mysql
+      - ./mysqld.cnf:/etc/mysql/conf.d/mysqld.cnf
 
-# volumes:
-#   mysql: {}
+  minio:
+    platform: linux/amd64
+    image: minio/minio:latest
+    container_name: minio
+    restart: unless-stopped
+    environment:
+      - MINIO_ROOT_USER='admin'
+      - MINIO_ROOT_PASSWORD='Admin123.'
+    # ports:
+    #   - "9000:9000"
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - minio-data:/data
+    command: server /data
+
+volumes:
+  mysql: {}
+  minio-data: {}
