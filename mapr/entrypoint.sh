@@ -3,7 +3,7 @@
 echo "[ $(date) ] Starting container configuration, watch logs and be patient, this will take a while!"
 
 # Create demo table in MySQL
-mysql -u mysql < /app/create-demodb-tables.sql && echo "[ $(date) ] MySQL demo table 'users' created."
+mysql -u mysql < /create-demo-table.sql && echo "[ $(date) ] MySQL demo table 'users' created."
 
 # Setup DB for Hive access
 # mysql -u root <<EOD
@@ -45,7 +45,7 @@ secretKey = ${secret_key}
 chown -R mapr:mapr /home/mapr/.aws/
 
 echo "[ $(date) ] Mounting /mapr"
-# Mount locally
+# Mount /mapr
 mount -t nfs -o nolock localhost:/mapr /mapr
 
 echo "[ $(date) ] Setting up mc for S3"
@@ -58,11 +58,8 @@ maprcli stream create -path /demovol/demostream -ttl 86400 -produceperm p -consu
 /opt/mapr/bin/mc mb df/demobk
 
 # Create Iceberg table on S3 bucket
-# /opt/mapr/spark/spark-3.5.5/bin/pyspark \
-#   --packages org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.9.2 < ./create_iceberg_table.py > /dev/null
-
-echo "[ $(date) ] Running UI"
-LD_LIBRARY_PATH=/opt/mapr/lib nohup /app/.venv/bin/streamlit run /app/main.py &
+/opt/mapr/spark/spark-3.5.5/bin/pyspark \
+  --packages org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.9.2 < ./create_iceberg_table.py > /dev/null
 
 echo "[ $(date) ] CREDENTIALS:"
 # echo "Hive Credentials: hive/Admin123."
@@ -73,4 +70,8 @@ echo "S3 Access Key: ${access_key}"
 echo "S3 Secret Key: ${secret_key}"
 
 echo "[ $(date) ] Ready!"
+
+# echo "[ $(date) ] Running UI"
+# LD_LIBRARY_PATH=/opt/mapr/lib nohup /app/.venv/bin/streamlit run /app/main.py &
+
 sleep infinity # just in case, keep container running
