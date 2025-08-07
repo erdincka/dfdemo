@@ -1,0 +1,5 @@
+[mysqld]
+server_id = 1
+log_bin = delta
+binlog_format=row
+binlog_do_db = demodb

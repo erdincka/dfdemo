@@ -9,10 +9,10 @@ import streamlit as st
 from streamlit.components.v1 import html
 from faker import Faker
 
-from config import logger
-from constants import DEMO_STREAM
-import s3
-from streams import produce
+from app.config import logger
+from app.constants import DEMO_STREAM
+import app.s3 as s3
+from app.streams import produce
 
 def run_command(command):
     logger.debug(f"Running: {command}")

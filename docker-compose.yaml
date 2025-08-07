@@ -9,19 +9,28 @@ services:
       - isSecure=true
       - MAPR_TZ=Europe/London
       - TZ=Europe/London
+      - NIFI_WEB_PROXY_HOST=docker.kayalab.uk:12443
+      - NIFI_VERSION=1.28.0
+      - NIFI_USER=admin
+      # Following password needs to be min 12 chars
+      - NIFI_PASSWORD=Admin123.Admin123.
     ports:
       - "8501:8501"  ## required to use app UI
       # - "8502:8502"  ## optional for secondary port
       # - "9443:9443"  ## optional for Installer UI
-      # - "8443:8443"  ## optional for MCS
-      # - "2222:22"  ## optional for SSH
+      - "8443:8443"  ## optional for MCS
+      - "2222:22"  ## optional for SSH
+      - "12443:12443" ## optional for NiFi
+      - "8047:8047" ## optional for Drill
+      - "8780:8780" ## optional for Airflow
+      - "3000:3000" ## optional for Grafana
     cap_add:
       - SYS_ADMIN
     privileged: true
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-    entrypoint: ["/app/start.sh"]
+    entrypoint: ["/entrypoint.sh"]
 
   # minio:
   #   platform: linux/amd64

@@ -6,11 +6,11 @@ from pathlib import Path
 import streamlit as st
 import pandas as pd
 
-import constants
-import streams
-from config import logger
-import s3
-import utils
+import app.constants as constants
+import app.streams as streams
+from app.config import logger
+import app.s3 as s3
+import app.utils as utils
 
 # Set the logging level for the inotify_buffer to WARNING or higher
 logging.getLogger("watchdog.observers.inotify_buffer").setLevel(logging.WARNING) 
