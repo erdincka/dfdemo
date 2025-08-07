@@ -1,6 +1,7 @@
 services:
   dfdemo:
     platform: linux/amd64
+    image: erdincka/dfdemo:latest
     build:
       context: ./mapr
       dockerfile: Dockerfile
@@ -16,7 +17,7 @@ services:
     container_name: dfdemo
     restart: unless-stopped
     environment:
-      - clusterName=mapr.demo
+      - clusterName=dfab.io
       - isSecure=true
       - MAPR_TZ=Europe/London
       - TZ=Europe/London
@@ -28,10 +29,12 @@ services:
       - NIFI_PASSWORD=Admin123.Admin123.
     ports:
       - "8501:8501"  ## required to use app UI
+      # - "9443:9443"  ## optional for Installer UI
       - "8443:8443"  ## optional for MCS
       - "2222:22"  ## optional for SSH
       - "12443:12443" ## optional for NiFi
       - "8047:8047" ## optional for Drill
+      - "8780:8780" ## optional for Airflow
       - "3000:3000" ## optional for Grafana
     cap_add:
       - SYS_ADMIN
@@ -41,10 +44,10 @@ services:
       - /etc/localtime:/etc/localtime:ro
     entrypoint: ["/entrypoint.sh"]
 
-  mysql:
+  db:
     platform: linux/amd64
     image: mysql/mysql-server:8.0
-    container_name: mysql
+    container_name: db
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: 'demodb'

@@ -26,7 +26,8 @@ RUN apt update && apt upgrade -y && apt install -y \
     mapr-drill \
     mapr-grafana \
     mapr-spark \
-    mapr-spark-thriftserver
+    mapr-spark-thriftserver \
+    mysql-client
 
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
 
@@ -47,12 +48,14 @@ ENV CFLAGS=-I/opt/mapr/include
 ENV LDFLAGS=-L/opt/mapr/lib
 
 # COPY APP FILES
-COPY pyproject.toml uv.lock .python-version /app/
+# COPY app/pyproject.toml app/uv.lock app/.python-version /app/
 COPY app/* /app/
 RUN /root/.local/bin/uv sync
 
 # Enable Iceberg for Spark
 RUN wget -P /opt/mapr/spark/spark-3.5.5/jars https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtime-3.5_2.12/1.9.2/iceberg-spark-runtime-3.5_2.12-1.9.2.jar
+
+COPY mysql.cnf /etc/mysql/conf.d/client.cnf
 
 # Cleanup
 RUN rm ./mysql-connector-j_"${MYSQL_CONNECTOR_VERSION}"-1ubuntu"${UBUNTU_VERSION}"_all.deb

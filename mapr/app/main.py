@@ -5,11 +5,11 @@ from pathlib import Path
 import streamlit as st
 import pandas as pd
 
-import app.constants as constants
-import app.streams as streams
-from app.config import logger
-import app.s3 as s3
-import app.utils as utils
+import constants
+import streams
+from config import logger
+import s3
+import utils
 
 # Set the logging level for the inotify_buffer to WARNING or higher
 logging.getLogger("watchdog.observers.inotify_buffer").setLevel(logging.WARNING) 
@@ -144,7 +144,7 @@ def main():
     if st.session_state.get('bucket_content', None): st.table(st.session_state['bucket_content'])
 
     # Enable AI chat
-    if st.session_state['use_ai']:
+    if st.session_state.get('use_ai', False):
         st.chat_input("Fire away")
 
     # Log Output

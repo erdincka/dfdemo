@@ -2,15 +2,15 @@
 
 echo "[ $(date) ] Starting container configuration, watch logs and be patient, this will take a while!"
 
-# Start MySQL
-usermod -d /var/lib/mysql/ mysql
-service mysql start
-# Prepare DB for Hive
-mysql -u root <<EOD
-    CREATE USER IF NOT EXISTS 'root'@'127.0.0.1' IDENTIFIED BY 'Admin123.';
-    GRANT ALL PRIVILEGES ON *.* TO 'root'@'127.0.0.1';
-    FLUSH PRIVILEGES;
-EOD
+# Create demo table in MySQL
+mysql -u mysql < /app/create-demodb-tables.sql && echo "[ $(date) ] MySQL demo table 'users' created."
+
+# Setup DB for Hive access
+# mysql -u root <<EOD
+#     CREATE USER IF NOT EXISTS 'root'@'127.0.0.1' IDENTIFIED BY 'Admin123.';
+#     GRANT ALL PRIVILEGES ON *.* TO 'root'@'127.0.0.1';
+#     FLUSH PRIVILEGES;
+# EOD
 
 # Remove the while loop at the end so we can continue with the rest of the default init-script
 sed -i '1,/This container IP/!d' /usr/bin/init-script
@@ -30,15 +30,6 @@ if [ -n "${NIFI_WEB_PROXY_HOST}" ]; then
     echo "[ $(date) ] NiFi set up to use proxy $NIFI_WEB_PROXY_HOST"
 fi
 
-# Create demo table in MySQL
-echo """
-[client]
-user=root
-password=Admin123.
-""" > /etc/mysql/conf.d/client.cnf
-mysql -u root < /app/create-demodb-tables.sql
-echo "[ $(date) ] MySQL demo table 'users' created."
-
 # Setup Object Store
 mkdir -p /root/.mc/certs/CAs/; cp /opt/mapr/conf/ca/chain-ca.pem /root/.mc/certs/CAs/
 AWS_CREDS=$(maprcli s3keys generate -domainname primary -accountname default -username mapr)
@@ -55,16 +46,16 @@ chown -R mapr:mapr /home/mapr/.aws/
 
 echo "[ $(date) ] Mounting /mapr"
 # Mount locally
-mount -t nfs -o nolock mapr:/mapr /mapr
+mount -t nfs -o nolock localhost:/mapr /mapr
 
 echo "[ $(date) ] Setting up mc for S3"
 # S3 alias for mc
 /opt/mapr/bin/mc alias set df https://dfab.io:9000 $access_key $secret_key
-/opt/mapr/bin/mc mb df/demobk
 
 echo "[ $(date) ] Creating demo volume, bucket, and stream"
 maprcli volume create -name demovol -path /demovol -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
 maprcli stream create -path /demovol/demostream -ttl 86400 -produceperm p -consumeperm p -topicperm p
+/opt/mapr/bin/mc mb df/demobk
 
 # Create Iceberg table on S3 bucket
 # /opt/mapr/spark/spark-3.5.5/bin/pyspark \
