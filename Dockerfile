@@ -35,7 +35,7 @@ RUN apt update && apt upgrade -y && apt install -y \
 # mapr-spark \
 # mapr-spark-thriftserver \
 # mapr-grafana \
-EXPOSE 9443 8443 8501 2222 8047
+EXPOSE 8443 8501 2222 8047 8780 12443
 
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
 

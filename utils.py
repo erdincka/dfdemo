@@ -1,13 +1,16 @@
 import json
 import subprocess
+import socket
 from urllib.parse import urlparse
 import httpx
 import pandas as pd
 import streamlit as st
+from streamlit.components.v1 import html
 from faker import Faker
 
 from config import logger
 from constants import DEMO_STREAM
+import s3
 from streams import produce
 
 def run_command(command):
@@ -90,3 +93,57 @@ def code_viewer(code: str, extra_code: str = ""):
     if extra_code:
         st.code(extra_code)
 
+
+# def nav_to(url):
+#     html(f'<script>window.open("{url}", "_blank").then(r => window.parent.location.href);</script>')
+
+
+def is_port_open(port: int):
+    """
+    Check if a port is open on localhost.
+    
+    Args:
+        port (int): The port number to check
+        
+    Returns:
+        bool: True if port is open, False otherwise
+    """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(1)  # Set timeout to avoid hanging
+            result = s.connect_ex(('localhost', int(port)))
+            logger.debug("Port %d connect result: %s", port, result)
+            return result == 0
+    except (socket.gaierror, ValueError):
+        # Handle invalid port numbers or DNS resolution issues
+        logger.debug("Invalid port or connection error: %d", port)
+        return False
+    except Exception as e:
+        # Log unexpected errors
+        logger.debug("Unexpected error checking port %d: %s", port, str(e))
+        return False
+
+
+def URLs(hostname: str):
+    if hostname and is_port_open(8443):
+        return [
+            { 'name': "MCS", 'help': 'Management Console', 'url': f"https://{hostname}:8443/app/mcs" },
+            { 'name': "DFUI", 'help': 'Consumption UI', 'url': f"https://{hostname}:8443/app/dfui" },
+            { 'name': "S3", 'help': 'Object Storage Console', 'url': f"https://{hostname}:8443/app/mcs/opal/#/buckets/" },
+        ]
+    else:
+        return []
+
+
+def APPs(hostname: str):
+    res = []
+    if hostname:
+        if is_port_open(8047): res.append( { 'name': 'Drill', 'help': 'NiFi', 'url': f'https://{hostname}:8047'} )
+        if is_port_open(8780): res.append( { 'name': 'AF', 'help': 'Airflow', 'url': f'https://{hostname}:8780' } )
+        if is_port_open(12443): res.append( { 'name': 'NF', 'help': 'NiFi', 'url': f"https://{hostname}:12443/nifi"} )
+
+    return res
+
+
+def list_bucket_table():
+    return st.table(s3.list_bucket(st.session_state['selected_bucket'])) if st.session_state['selected_bucket'] else None

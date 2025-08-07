@@ -83,12 +83,12 @@ def list_buckets():
         logger.error(e)
         raise e
 
-def list_objects(bucket: str):
+def list_bucket(bucket: str):
     try: 
         client = get_client()
         objects = client.list_objects(Bucket=bucket)
         logger.debug(objects)
-        return [ { 'Object Key': o['Key'], 'Size': o['Size'] } for o in objects['Contents'] ]
+        return [ { 'Object Key': o['Key'], 'Size': o['Size'], 'Modified': o['LastModified'] } for o in objects['Contents'] ]
 
     except Exception as e:
         logger.error(e)
