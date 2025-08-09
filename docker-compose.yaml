@@ -32,6 +32,35 @@ services:
       - /etc/localtime:/etc/localtime:ro
     entrypoint: ["/entrypoint.sh"]
 
+  dfclient:
+    platform: linux/amd64
+    image: erdincka/dfclient:latest
+    container_name: dfclient
+    restart: unless-stopped
+    ports:
+      - "8501:8501"  ## required to use app UI
+    privileged: true
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    # entrypoint: ["/entrypoint.sh"]
+    command: ["/bin/bash", "-c", "sleep infinity"]
+
+  nfs:
+    platform: linux/amd64
+    image: itsthenetwork/nfs-server-alpine:latest
+    container_name: nfs
+    restart: unless-stopped
+    environment:
+      - SHARED_DIRECTORY=/share
+    ports: []
+      # - "2049:2049" # conflict with the host?
+    privileged: true
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - nfs-data:/share:rw
+
   db:
     platform: linux/amd64
     image: mysql/mysql-server:8.0
@@ -65,3 +94,4 @@ services:
 volumes:
   mysql: {}
   minio-data: {}
+  nfs-data: {}
