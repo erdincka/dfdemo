@@ -37,16 +37,17 @@ RUN wget -P /opt/mapr/nifi/nifi-"${NIFI_VERSION}"/extensions https://repo1.maven
 # Enable Iceberg for Spark
 RUN wget -P /opt/mapr/spark/spark-3.5.5/jars https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtime-3.5_2.12/1.9.2/iceberg-spark-runtime-3.5_2.12-1.9.2.jar
 
-COPY entrypoint.sh /
+RUN wget "https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-j_${MYSQL_CONNECTOR_VERSION}-1ubuntu${UBUNTU_VERSION}_all.deb"
+RUN dpkg -i "./mysql-connector-j_${MYSQL_CONNECTOR_VERSION}-1ubuntu${UBUNTU_VERSION}_all.deb"
 
+# Set up files/scripts
 COPY mysql.cnf /etc/mysql/conf.d/client.cnf
+COPY entrypoint.sh /
 COPY create_iceberg_table.py /
 COPY create-demo-table.sql /
 
-RUN wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-j_$MYSQL_CONNECTOR_VERSION-1ubuntu"${UBUNTU_VERSION}"_all.deb
-RUN dpkg -i ./mysql-connector-j_$MYSQL_CONNECTOR_VERSION-1ubuntu"${UBUNTU_VERSION}"_all.deb
 # Cleanup
-RUN rm ./mysql-connector-j_"${MYSQL_CONNECTOR_VERSION}"-1ubuntu"${UBUNTU_VERSION}"_all.deb ./create_iceberg_table.py ./create-demo-table.sql
+RUN rm "./mysql-connector-j_${MYSQL_CONNECTOR_VERSION}-1ubuntu${UBUNTU_VERSION}_all.deb"
 
 # COPY APP FILES
 # COPY app/pyproject.toml app/uv.lock app/.python-version /app/

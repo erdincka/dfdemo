@@ -58,14 +58,13 @@ maprcli stream create -path /demovol/demostream -ttl 86400 -produceperm p -consu
 /opt/mapr/bin/mc mb df/demobk
 
 # Create Iceberg table on S3 bucket
-/opt/mapr/spark/spark-3.5.5/bin/pyspark \
-  --packages org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.9.2 < ./create_iceberg_table.py > /dev/null
+# /opt/mapr/spark/spark-3.5.5/bin/pyspark \
+#   --packages org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.9.2 < ./create_iceberg_table.py > /dev/null
 
 echo "[ $(date) ] CREDENTIALS:"
 # echo "Hive Credentials: hive/Admin123."
 echo "NiFi: ${NIFI_USER}/${NIFI_PASSWORD}"
 echo "Cluster Admin: mapr/mapr"
-echo "MySQL: root/Admin123."
 echo "S3 Access Key: ${access_key}"
 echo "S3 Secret Key: ${secret_key}"
 
