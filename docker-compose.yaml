@@ -1,8 +1,20 @@
 services:
-  dfdemo:
+  mapr:
     platform: linux/amd64
-    image: erdincka/dfdemo:latest
-    container_name: dfdemo
+    image: erdincka/mapr:0.1.1
+    build:
+      context: ./mapr
+      dockerfile: Dockerfile
+      args:
+        # - MAPR_REPO=https://package.ezmeral.hpe.com/releases/
+        - MAPR_REPO=http://10.1.1.4/mapr/ # this is my local repo, default is the line above
+        # Don't change these unless you are using a newer sandbox image
+        - UBUNTU_VERSION=22.04
+        - NIFI_VERSION=1.28.0
+        - MYSQL_CONNECTOR_VERSION=9.3.0
+      platforms:
+        - "linux/amd64"
+    container_name: mapr
     restart: unless-stopped
     environment:
       - clusterName=dfab.io
@@ -16,7 +28,7 @@ services:
       # Following password needs to be min 12 chars
       - NIFI_PASSWORD=Admin123.Admin123.
     ports:
-      - "8501:8501"  ## required to use app UI
+      # - "8501:8501"  ## required if there is an app UI
       # - "9443:9443"  ## optional for Installer UI
       - "8443:8443"  ## optional for MCS
       - "2222:22"  ## optional for SSH
@@ -24,27 +36,42 @@ services:
       - "8047:8047" ## optional for Drill
       - "8780:8780" ## optional for Airflow
       - "3000:3000" ## optional for Grafana
+    privileged: true
     cap_add:
       - SYS_ADMIN
-    privileged: true
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-    entrypoint: ["/entrypoint.sh"]
+      # - ./mysql.cnf:/etc/mysql/conf.d/client.cnf
 
-  dfclient:
+  app:
     platform: linux/amd64
-    image: erdincka/dfclient:latest
-    container_name: dfclient
+    image: erdincka/app:0.1.1
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      args:
+        - MAPR_REPO=http://10.1.1.4/mapr/ # this is my local repo, delete for default
+      platforms:
+        - "linux/amd64"
+    container_name: app
     restart: unless-stopped
+    depends_on:
+      mapr:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+        restart: true
     ports:
       - "8501:8501"  ## required to use app UI
+    ## required to mount nfs
     privileged: true
+    cap_add:
+      - SYS_ADMIN
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-    # entrypoint: ["/entrypoint.sh"]
-    command: ["/bin/bash", "-c", "sleep infinity"]
+      # - ./mysql.cnf:/etc/mysql/conf.d/client.cnf
 
   nfs:
     platform: linux/amd64

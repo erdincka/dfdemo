@@ -2,16 +2,6 @@
 
 echo "[ $(date) ] Starting container configuration, watch logs and be patient, this will take a while!"
 
-# Create demo table in MySQL
-mysql -u mysql < /create-demo-table.sql && echo "[ $(date) ] MySQL demo table 'users' created."
-
-# Setup DB for Hive access
-# mysql -u root <<EOD
-#     CREATE USER IF NOT EXISTS 'root'@'127.0.0.1' IDENTIFIED BY 'Admin123.';
-#     GRANT ALL PRIVILEGES ON *.* TO 'root'@'127.0.0.1';
-#     FLUSH PRIVILEGES;
-# EOD
-
 # Remove the while loop at the end so we can continue with the rest of the default init-script
 sed -i '1,/This container IP/!d' /usr/bin/init-script
 echo "[ $(date) ] Data Fabric configuring, this will take some time..."

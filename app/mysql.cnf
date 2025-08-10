@@ -1,0 +1,5 @@
+[client]
+host=db
+user=mysql
+password=Admin123.
+database=demodb

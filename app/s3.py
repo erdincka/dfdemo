@@ -23,7 +23,7 @@ def get_client():
         endpoint_url="https://dfab.io:9000",
         use_ssl=True,
         # verify=False
-        verify='/opt/mapr/conf/ca/chain-ca.pem'
+        verify='/root/.mc/certs/CAs/chain-ca.pem'
     )
 
 def put(df: pd.DataFrame, bucket_name: str, file_key: str, content_type: str):

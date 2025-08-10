@@ -11,7 +11,10 @@ ARG MYSQL_CONNECTOR_VERSION=9.3.0
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt update && apt install -y git python3-dev gcc tree locales
+# Replace dev repo
+RUN sed -i "s|http://dfaf.mip.storage.hpecorp.net/artifactory/list/prestage/releases|${MAPR_REPO}|g" /etc/apt/sources.list.d/mapr.list
+
+RUN apt update && apt -qq install -y git python3-dev gcc tree locales
 
 ENV MAPR_HOME=/opt/mapr
 ENV SHELL=/bin/bash \
@@ -20,9 +23,7 @@ ENV SHELL=/bin/bash \
     LANGUAGE=en_US.UTF-8
 RUN locale-gen $LC_ALL
 
-# Replace dev repo
-RUN sed -i "s|http://dfaf.mip.storage.hpecorp.net/artifactory/list/prestage/releases|${MAPR_REPO}|g" /etc/apt/sources.list.d/mapr.list
-RUN apt update && apt upgrade -y && apt install -y \
+RUN apt update && apt -qq upgrade -y && apt -qq install -y \
     mapr-nifi \
     mapr-drill \
     mapr-grafana \
@@ -46,22 +47,13 @@ RUN wget "https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-j_${MY
 RUN dpkg -i "./mysql-connector-j_${MYSQL_CONNECTOR_VERSION}-1ubuntu${UBUNTU_VERSION}_all.deb"
 
 # Set up files/scripts
-COPY mysql.cnf /etc/mysql/conf.d/client.cnf
+COPY ./mysql.cnf /etc/mysql/conf.d/client.cnf
 COPY entrypoint.sh /
 COPY create_iceberg_table.py /
-COPY create-demo-table.sql /
 
 # Cleanup
 RUN rm "./mysql-connector-j_${MYSQL_CONNECTOR_VERSION}-1ubuntu${UBUNTU_VERSION}_all.deb"
 
-# COPY APP FILES
-# COPY app/pyproject.toml app/uv.lock app/.python-version /app/
-# COPY app/* /app/
+ENTRYPOINT [ "/entrypoint.sh" ]
 
-# RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-# RUN echo "export UV_ENV_FILE=.env" >> $HOME/.profile
-# RUN echo "export LD_LIBRARY_PATH=/opt/mapr/lib" >> $HOME/.profile
-# ENV CFLAGS=-I/opt/mapr/include
-# ENV LDFLAGS=-L/opt/mapr/lib
-# RUN /root/.local/bin/uv sync
-
+HEALTHCHECK --interval=30s --timeout=30s --start-period=15m --start-interval=30s --retries=3 CMD cat /tmp/maprticket_1000 || exit 1
