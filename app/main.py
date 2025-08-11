@@ -38,6 +38,9 @@ def main():
     # if st.session_state['code_list_bucket']:
     #     utils.code_viewer(inspect.getsource(s3.get_client), inspect.getsource(s3.list_bucket))
 
+    if st.button("Push sample data"):
+        utils.sample_to_incoming()
+
     cols = st.columns(2, border=True)
     with cols[0]:
         st.title('Source')

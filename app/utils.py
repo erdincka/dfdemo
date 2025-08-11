@@ -85,7 +85,7 @@ def get_public_hostname():
 def sample_to_incoming():
     for _ in range(10):
         msg = Faker().profile(fields=['name', 'address', 'job', 'sex'])
-        if produce(DEMO_STREAM, 'incoming', json.dumps(msg)):
+        if streams.produce(DEMO_STREAM, 'incoming', json.dumps(msg)):
             logger.info(f"Published {msg}")
 
 
