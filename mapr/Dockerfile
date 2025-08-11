@@ -56,4 +56,4 @@ RUN rm "./mysql-connector-j_${MYSQL_CONNECTOR_VERSION}-1ubuntu${UBUNTU_VERSION}_
 
 ENTRYPOINT [ "/entrypoint.sh" ]
 
-HEALTHCHECK --interval=30s --timeout=30s --start-period=15m --start-interval=30s --retries=3 CMD cat /tmp/maprticket_1000 || exit 1
+HEALTHCHECK --interval=30s --timeout=30s --start-period=15m --start-interval=30s --retries=3 CMD [ -d /mapr/dfab.io/ ] || exit 1

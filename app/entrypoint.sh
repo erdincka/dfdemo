@@ -10,11 +10,17 @@ mysql < /create-demo-table.sql && echo "[ $(date) ] MySQL demo table 'users' cre
 #     FLUSH PRIVILEGES;
 # EOD
 
+mkdir -p /root/.mc/certs/CAs/
+mkdir -p /home/mapr/.aws/
+
 # Copy secure files from server
-sshpass -f /root/mapr_password scp -o StrictHostKeyChecking=no mapr@mapr:/opt/mapr/conf/ssl_truststore /opt/mapr/conf/
-sshpass -f /root/mapr_password scp -o StrictHostKeyChecking=no mapr@mapr:/opt/mapr/conf/ssl-client.xml /opt/mapr/conf/
-sshpass -f /root/mapr_password scp -o StrictHostKeyChecking=no mapr@mapr:/opt/mapr/conf/ca/chain-ca.pem /root/.mc/certs/CAs/
-sshpass -f /root/mapr_password scp -o StrictHostKeyChecking=no mapr@mapr:/home/mapr/.aws/credentials /home/mapr/.aws/
+while [ ! -f /home/mapr/.aws/credentials ]; do
+    sshpass -f /root/mapr_password scp -o StrictHostKeyChecking=no mapr@mapr:/opt/mapr/conf/ssl_truststore /opt/mapr/conf/
+    sshpass -f /root/mapr_password scp -o StrictHostKeyChecking=no mapr@mapr:/opt/mapr/conf/ssl-client.xml /opt/mapr/conf/
+    sshpass -f /root/mapr_password scp -o StrictHostKeyChecking=no mapr@mapr:/opt/mapr/conf/ca/chain-ca.pem /root/.mc/certs/CAs/
+    sshpass -f /root/mapr_password scp -o StrictHostKeyChecking=no mapr@mapr:/home/mapr/.aws/credentials /home/mapr/.aws/
+    sleep 2
+done
 
 # Configure secure client
 /opt/mapr/server/configure.sh -N dfab.io -c -secure -C mapr:7222
@@ -42,13 +48,12 @@ cp /root/.mc/certs/CAs/chain-ca.pem /usr/local/share/ca-certificates/chain-ca.cr
 update-ca-certificates
 
 echo "[ $(date) ] CREDENTIALS:"
-echo "NiFi: ${NIFI_USER}/${NIFI_PASSWORD}"
 echo "Cluster Admin: mapr/mapr"
 echo "S3 Access Key: ${access_key}"
 echo "S3 Secret Key: ${secret_key}"
 
 # Run app
-./venv/bin/streamlit run main.py
+/app/.venv/bin/streamlit run main.py
 
 # in case app crashes, keep container running for debug
 sleep infinity

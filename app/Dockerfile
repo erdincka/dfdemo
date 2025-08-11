@@ -24,4 +24,4 @@ COPY ./mysql.cnf /etc/mysql/conf.d/client.cnf
 
 ENTRYPOINT [ "/entrypoint.sh" ]
 
-HEALTHCHECK --interval=30s --timeout=30s --start-period=30s --retries=3 CMD [ -d /mapr/dfab.io/ ] || exit 1
+HEALTHCHECK --interval=30s --timeout=30s --start-period=30s --retries=3 CMD curl -f http://localhost:8501/ || exit 1
