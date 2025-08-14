@@ -1,7 +1,7 @@
 services:
   mapr:
     platform: linux/amd64
-    image: erdincka/mapr:0.1.4
+    image: erdincka/mapr:0.1.5
     build:
       context: ./mapr
       dockerfile: Dockerfile
@@ -46,7 +46,7 @@ services:
 
   app:
     platform: linux/amd64
-    image: erdincka/app:0.1.4
+    image: erdincka/app:0.1.5
     build:
       context: ./app
       dockerfile: Dockerfile

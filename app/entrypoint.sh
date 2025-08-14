@@ -14,11 +14,19 @@ mkdir -p /root/.mc/certs/CAs/
 mkdir -p /home/mapr/.aws/
 
 # Copy secure files from server
-while [ ! -f /home/mapr/.aws/credentials ]; do
+while [[ ! -f /home/mapr/tenant_user21_ticket.txt || ! -f /home/mapr/.aws/credentials ]]; do
+    echo "Get ssl_truststore"
     sshpass -f /root/mapr_password scp -o StrictHostKeyChecking=no mapr@mapr:/opt/mapr/conf/ssl_truststore /opt/mapr/conf/
+    echo "Get ssl-client.xml"
     sshpass -f /root/mapr_password scp -o StrictHostKeyChecking=no mapr@mapr:/opt/mapr/conf/ssl-client.xml /opt/mapr/conf/
+    echo "Get chain-ca.pem"
     sshpass -f /root/mapr_password scp -o StrictHostKeyChecking=no mapr@mapr:/opt/mapr/conf/ca/chain-ca.pem /root/.mc/certs/CAs/
+    echo "Get credentials"
     sshpass -f /root/mapr_password scp -o StrictHostKeyChecking=no mapr@mapr:/home/mapr/.aws/credentials /home/mapr/.aws/
+    echo "Get user11 ticket"
+    sshpass -f /root/mapr_password scp -o StrictHostKeyChecking=no mapr@mapr:/home/mapr/tenant_user11_ticket.txt /home/mapr/
+    echo "Get user21 ticket"
+    sshpass -f /root/mapr_password scp -o StrictHostKeyChecking=no mapr@mapr:/home/mapr/tenant_user21_ticket.txt /home/mapr/
     sleep 2
 done
 
@@ -46,6 +54,21 @@ chmod +x /opt/mapr/bin/mc
 # Add certificate to store
 cp /root/.mc/certs/CAs/chain-ca.pem /usr/local/share/ca-certificates/chain-ca.crt
 update-ca-certificates
+
+# Create users and groups for multi-tenant demo
+getent group tenant1 || groupadd -g 10000 tenant1
+getent group tenant2 || groupadd -g 20000 tenant2
+id user11 || useradd -m -d /home/user11 -g 10000 -s /bin/bash -u 10001 user11
+id user12 || useradd -m -d /home/user12 -g 10000 -s /bin/bash -u 10002 user12
+id user21 || useradd -m -d /home/user21 -g 20000 -s /bin/bash -u 20002 user21
+echo user11:mapr | chpasswd
+echo user12:mapr | chpasswd
+echo user21:mapr | chpasswd
+mkdir /t1
+mkdir /t2
+# save the original fuse.conf
+cp /opt/mapr/conf/fuse.conf /opt/mapr/conf/fuse.orig
+apt -qq install -y sudo
 
 echo "[ $(date) ] CREDENTIALS:"
 echo "Cluster Admin: mapr/mapr"

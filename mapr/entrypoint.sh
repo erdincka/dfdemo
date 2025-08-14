@@ -47,6 +47,31 @@ maprcli volume create -name demovol -path /demovol -replication 1 -minreplicatio
 maprcli stream create -path /demovol/demostream -ttl 86400 -produceperm p -consumeperm p -topicperm p
 /opt/mapr/bin/mc mb df/demobk
 
+# Create users for multi-tenant demo
+getent group tenant1 || groupadd -g 10000 tenant1
+getent group tenant2 || groupadd -g 20000 tenant2
+id user11 || useradd -m -d /home/user11 -g 10000 -s /bin/bash -u 10001 user11
+id user12 || useradd -m -d /home/user12 -g 10000 -s /bin/bash -u 10002 user12
+id user21 || useradd -m -d /home/user21 -g 20000 -s /bin/bash -u 20002 user21
+echo user11:mapr | chpasswd
+echo user12:mapr | chpasswd
+echo user21:mapr | chpasswd
+# Allow users access to system (login)
+/opt/mapr/bin/maprcli acl set -type cluster -user root:fc mapr:fc user11:login user12:login user21:login
+# /opt/mapr/bin/maprcli acl set -type volume -name tenant1Vol -user mapr:fc user11:fc user12:m
+
+
+# Create volumes for multi-tenant demo
+/opt/mapr/bin/maprcli volume create -name tenant1Vol -path /tenant1 -tenantuser user11 -readAce 'g:tenant1' -writeAce 'u:user11' -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
+/opt/mapr/bin/maprcli volume create -name tenant2Vol -path /tenant2 -tenantuser user21 -readAce 'g:tenant2' -writeAce 'u:user21' -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
+echo mapr | maprlogin generateticket -type tenant -user user11 -out /home/mapr/tenant_user11_ticket.txt
+echo mapr | maprlogin generateticket -type tenant -user user21 -out /home/mapr/tenant_user21_ticket.txt
+chown mapr:mapr /home/mapr/tenant_user11_ticket.txt /home/mapr/tenant_user21_ticket.txt
+mkdir /mapr/dfab.io/tenant1/user11; chown user11:tenant1 /mapr/dfab.io/tenant1/user11
+mkdir /mapr/dfab.io/tenant1/user12; chown user12:tenant1 /mapr/dfab.io/tenant1/user12
+mkdir /mapr/dfab.io/tenant2/user21; chown user21:tenant2 /mapr/dfab.io/tenant2/user21
+
+
 # Create Iceberg table on S3 bucket
 # /opt/mapr/spark/spark-3.5.5/bin/pyspark \
 #   --packages org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.9.2 < ./create_iceberg_table.py > /dev/null
@@ -59,8 +84,5 @@ echo "S3 Access Key: ${access_key}"
 echo "S3 Secret Key: ${secret_key}"
 
 echo "[ $(date) ] Ready!"
-
-# echo "[ $(date) ] Running UI"
-# LD_LIBRARY_PATH=/opt/mapr/lib nohup /app/.venv/bin/streamlit run /app/main.py &
 
 sleep infinity # just in case, keep container running

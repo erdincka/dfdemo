@@ -3,6 +3,7 @@ import streamlit as st
 
 logger = logging.getLogger(__name__)
 
+
 class StreamlitLogHandler(logging.Handler):
     def __init__(self, widget_update_func):
         super().__init__()
@@ -12,9 +13,11 @@ class StreamlitLogHandler(logging.Handler):
         msg = self.format(record)
         self.widget_update_func(msg)
 
+
 # configure streamlit logger
 def add_to_logs(msg):
-    st.session_state['logs'] += str(msg) + '\n'
+    st.session_state["logs"] += str(msg) + "\n"
+
 
 logger.handlers.clear()
 
@@ -25,5 +28,5 @@ if streamlit_log_handler not in logger.handlers:
 
 
 # Configure logging
-FORMAT = '%(asctime)s %(levelname)s %(filename)s:%(lineno)d - %(message)s'
+FORMAT = "%(asctime)s %(levelname)s %(filename)s:%(lineno)d - %(message)s"
 logging.basicConfig(level=logging.INFO, encoding="utf-8", format=FORMAT)

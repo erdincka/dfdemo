@@ -1,22 +1,22 @@
 sources = [
-    'File',
-    'NASA API',
-    'Sales DB',
-    'Stream',
+    "File",
+    "NASA API",
+    "Sales DB",
+    "Stream",
 ]
 
 targets = [
-    's3',
-    'posix',
+    "s3",
+    "posix",
     # 'hive',
     # 'iceberg',
     # 'kafkatopic',
 ]
 
 write_as = [
-    'csv',
-    'json',
-    'parquet',
+    "csv",
+    "json",
+    "parquet",
 ]
 
 # locations = [
@@ -25,4 +25,11 @@ write_as = [
 #     'bucket',
 # ]
 
-DEMO_STREAM = '/demovol/demostream'
+DEMO_STREAM = "/demovol/demostream"
+
+DEMO_FOLDERS = [
+    "/",
+    "/demovol",
+    "/tenant1",
+    "/tenant2",
+]
