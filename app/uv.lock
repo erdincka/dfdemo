@@ -2,6 +2,9 @@ version = 1
 revision = 3
 requires-python = ">=3.12"
 
+[manifest]
+overrides = [{ name = "mapr-streams-python", marker = "sys_platform == 'darwin'" }]
+
 [[package]]
 name = "altair"
 version = "5.5.0"
@@ -160,7 +163,7 @@ dependencies = [
     { name = "boto3" },
     { name = "faker" },
     { name = "httpx" },
-    { name = "mapr-streams-python" },
+    { name = "mapr-streams-python", marker = "sys_platform == 'darwin'" },
     { name = "streamlit" },
     { name = "streamlit-js-eval" },
 ]
