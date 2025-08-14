@@ -258,6 +258,22 @@ def multi_tenancy():
             st.code(inspect.getsource(multi_tenancy))
 
 
+def datamasking():
+    st.markdown(
+        """### Dynamic Data Masking
+                
+        Works on JSON tables, with column families and across tables
+                
+        """
+    )
+    st.write("Create Table, with column family")
+    st.write("Set/show datamask setting")
+    st.write("Get as user with permissions")
+    st.write("Get as user without permissions")
+    st.write("Change datamask settings")
+    st.write("Repeat with users")
+
+
 def cdc():
     st.markdown(
         """
@@ -273,12 +289,16 @@ def cdc():
     )
 
 
+def mesh():
+    st.link_button("Mesh", "http://docker.kayalab.uk:3005/")
+
+
 DEMO_LIST = {
     "Stream & Batch": inout,
     "Multi-Tenancy": multi_tenancy,
     "CDC": cdc,
-    "Data Mesh": None,
-    "More...": None,
+    "Data Mesh": mesh,
+    "DDM": datamasking,
 }
 
 logger.debug("Demos Loaded!")
