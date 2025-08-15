@@ -1,4 +1,4 @@
-import socket
+import os
 from mapr.ojai.storage.ConnectionFactory import ConnectionFactory
 
 import pandas as pd
@@ -7,12 +7,14 @@ from deltalake import DeltaTable, write_deltalake
 import timeit
 import logging
 
-logger = logging.getLogger("tables")
+from config import logger
+import utils
 
 # suppress ojai connection logging
 logging.getLogger("mapr.ojai.storage.OJAIConnection").setLevel(logging.NOTSET)
 
 ojaiconnection = None
+
 
 def get_connection():
     """
@@ -23,15 +25,20 @@ def get_connection():
 
     # Use singleton
     global ojaiconnection
-    if ojaiconnection is not None: return ojaiconnection
+    if ojaiconnection is not None:
+        return ojaiconnection
 
-    connection_str = f"{app.storage.user['MAPR_HOST']}:5678?auth=basic;user={app.storage.user['MAPR_USER']};password={app.storage.user['MAPR_PASS']};" \
-            "ssl=true;" \
-            "sslCA=/opt/mapr/conf/ssl_truststore.pem;" \
-            f"sslTargetNameOverride={socket.getfqdn(app.storage.user['MAPR_HOST'])}"
+    connection_str = (
+        f"localhost:5678?auth=basic;user=mapr;password=mapr;"
+        "ssl=true;"
+        "sslCA=/opt/mapr/conf/ssl_truststore.pem;"
+        f"sslTargetNameOverride=dfab.io"
+    )
 
     ojaiconnection = ConnectionFactory.get_connection(connection_str=connection_str)
-    logger.info("Got new maprdb connection using OJAI in %f sec", timeit.default_timer() - tick)
+    logger.info(
+        "Got new maprdb connection using OJAI in %f sec", timeit.default_timer() - tick
+    )
 
     return ojaiconnection
 
@@ -139,15 +146,12 @@ def search_documents(table: str, selectClause: list, whereClause: dict):
         table = connection.get_store(table)
 
         # Create an OJAI query
-        query = {"$select": selectClause,
-                "$where": whereClause }
+        query = {"$select": selectClause, "$where": whereClause}
 
         logger.info("Query: %s", query)
 
         # options for find request
-        options = {
-            'ojai.mapr.query.result-as-document': True
-            }
+        options = {"ojai.mapr.query.result-as-document": True}
 
         # fetch OJAI Documents by query
         query_result = table.find(query, options=options)
@@ -165,7 +169,7 @@ def search_documents(table: str, selectClause: list, whereClause: dict):
         return doc
 
 
-async def get_documents(table_path: str, limit: int = FETCH_RECORD_NUM):
+async def get_documents(table_path: str, limit: int = 10):
     """
     Read `limit` records from the table to peek data
 
@@ -190,18 +194,18 @@ async def get_documents(table_path: str, limit: int = FETCH_RECORD_NUM):
 
         # Create a query to get the last n records based on the timestamp field
         if limit is not None:
-            query = connection.new_query() \
-                .select('*') \
-                .limit(limit) \
-                .build()
+            query = connection.new_query().select("*").limit(limit).build()
         else:
-            query = connection.new_query() \
-                .select('*') \
-                .build()
+            query = connection.new_query().select("*").build()
 
         tick = timeit.default_timer()
         # Run the query and return the results as list
-        logger.debug("Returned %d docs in %s, took %f sec", len([doc for doc in table.find(query)]), table_path, timeit.default_timer() - tick)
+        logger.debug(
+            "Returned %d docs in %s, took %f sec",
+            len([doc for doc in table.find(query)]),
+            table_path,
+            timeit.default_timer() - tick,
+        )
         # tick = timeit.default_timer()
         results = table.find(query)
         # logger.debug("TEST time: %f", timeit.default_timer() - tick)
@@ -216,6 +220,7 @@ async def get_documents(table_path: str, limit: int = FETCH_RECORD_NUM):
 # using Spark or any other means
 # we may use REST API but I couldn't find rich REST functionality (read/write) for binary tables
 
+
 def binary_table_upsert(table_path: str, row: dict):
     """
     Create or return table, then push the row into the table
@@ -227,7 +232,7 @@ def binary_table_upsert(table_path: str, row: dict):
     :returns bool: result of op
     """
 
-    not_implemented()
+    utils.not_implemented()
 
 
 def binary_table_get_all(table_path: str):
@@ -239,7 +244,8 @@ def binary_table_get_all(table_path: str):
     :returns ??: record as dict
     """
 
-    not_implemented()
+    utils.not_implemented()
+
 
 async def delta_table_upsert(table_path: str, records: pd.DataFrame):
     """
@@ -247,12 +253,14 @@ async def delta_table_upsert(table_path: str, records: pd.DataFrame):
     """
 
     try:
-        table_uri = f"{MOUNT_PATH}/{get_cluster_name()}{table_path}"
+        table_uri = f"/mapr/dfab.io/{table_path}"
 
         df = pd.DataFrame().from_records(records)
 
         if not os.path.exists(table_uri):
-            write_deltalake(table_or_uri=table_uri, data=df, mode="append", schema_mode="merge")
+            write_deltalake(
+                table_or_uri=table_uri, data=df, mode="append", schema_mode="merge"
+            )
             logger.debug("Created new Delta table in %s", table_uri)
         else:
             dt = DeltaTable(table_uri=table_uri)
@@ -279,22 +287,21 @@ async def delta_table_upsert(table_path: str, records: pd.DataFrame):
     return True
 
 
-async def delta_table_get(table_path, query: str = None):
+async def delta_table_get(table_path, query: str = ""):
     """
     Returns all records from the binary table as DataFrame
     """
 
-    fullpath = f"{MOUNT_PATH}/{get_cluster_name()}{table_path}"
+    fullpath = f"/mapr/dfab.io/{table_path}"
 
     if not os.path.exists(fullpath):
         logger.warning("%s not created yet", fullpath)
         return pd.DataFrame()
 
     try:
-        if query is None or query == "":
+        if not query:
             return DeltaTable(fullpath).to_pandas()
         else:
-            fraud = "fraud" # for query string
             return DeltaTable(fullpath).to_pandas().query(query)
 
     except Exception as error:

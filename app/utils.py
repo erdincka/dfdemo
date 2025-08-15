@@ -1,16 +1,20 @@
 import json
-import os
-from pathlib import Path
 import subprocess
 import socket
 from urllib.parse import urlparse
+from uuid import uuid4
 import httpx
 import pandas as pd
 import streamlit as st
 from faker import Faker
 
 from config import logger
-import constants, s3, streams
+import constants, s3, streams, restcalls
+
+
+def not_implemented():
+    logger.debug("Calling a function which is not implemented yet")
+    return "Not Implemented"
 
 
 def run_command(command):
@@ -122,6 +126,24 @@ def sample_to_incoming():
             logger.info(f"Published {msg}")
 
 
+def sample_creditcards(count: int = 10):
+    res = []
+    fake = Faker("en_GB")
+    for _ in range(count):
+        newcc = {
+            "_id": uuid4().hex,
+            "name": fake.name(),
+            "creditcard": fake.credit_card_number(),
+            "address": fake.address(),
+            "mobile": fake.phone_number(),
+            "ssn": fake.ssn(),
+            "iban": fake.iban(),
+        }
+        res.append(newcc)
+
+    return res
+
+
 # @st.dialog("Code", width='large')
 # def code_viewer(code: str, extra_code: str = ""):
 #     st.code(code)
@@ -214,13 +236,32 @@ def set_bucket_list():
 
 def set_folder_list():
     st.session_state["folder_content"] = (
-        list_folder(st.session_state["selected_folder"])
+        get_folder_list(st.session_state["selected_folder"])
         if st.session_state["selected_folder"]
         else None
     )
 
 
-def list_folder(folder: str):
+def set_table_content(runas: str = ""):
+    logger.info("Reading table content as user: %s", runas)
+    try:
+        st.session_state["table_content"] = (
+            restcalls.get_documents(st.session_state["selected_table"])
+            if not runas
+            else (
+                restcalls.get_documents(
+                    st.session_state["selected_table"], auth=(runas, "mapr")
+                )
+                if st.session_state["selected_table"]
+                else None
+            )
+        )
+    except Exception as error:
+        logger.error(error)
+        raise error
+
+
+def get_folder_list(folder: str):
     """
     Return a list of dictionaries that mirror the information you see with
     ``ls -l`` – permissions, link‑count, owner, group, size, modification

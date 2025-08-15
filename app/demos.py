@@ -10,6 +10,7 @@ import utils
 import constants
 import streams
 import s3
+import restcalls
 
 
 def inout():
@@ -122,7 +123,7 @@ def inout():
             elif st.session_state["target"] == "posix":
                 destination = st.selectbox(
                     "Folder",
-                    options=[f["name"] for f in utils.list_folder("/demovol")],
+                    options=[f["name"] for f in utils.get_folder_list("/demovol")],
                     index=None,
                     accept_new_options=True,
                 )
@@ -261,17 +262,50 @@ def multi_tenancy():
 def datamasking():
     st.markdown(
         """### Dynamic Data Masking
-                
-        Works on JSON tables, with column families and across tables
-                
-        """
+            
+    Works on JSON tables, with column families and across tables.
+
+    Create/re-use table, add records, set DDM and retrieve records as different users.
+
+    user11 has `unmaskedread` permission.
+
+    user12 has `read` permission.
+            
+    """
     )
-    st.write("Create Table, with column family")
-    st.write("Set/show datamask setting")
-    st.write("Get as user with permissions")
-    st.write("Get as user without permissions")
-    st.write("Change datamask settings")
-    st.write("Repeat with users")
+
+    cols = st.columns(4, vertical_alignment="bottom")
+    # table_name = cols[0].text_input("Table name", placeholder="mytable")
+    table_name = st.session_state["selected_table"]
+
+    # Allow adding records
+    if table_name:
+        if cols[0].button(
+            "✨",
+            help=f"Add random records to the table {table_name}",
+        ):
+            try:
+                docs = utils.sample_creditcards(1)
+                st.write(f"Sending records to {table_name}")
+                st.table(docs)
+                st.write(restcalls.add_documents(table_name, docs))
+            except Exception as error:
+                st.error(error)
+        user = cols[2].selectbox("User", options=["user11", "user12"])
+        # List table content
+        if st.session_state.get("table_content", None):
+            cols = st.columns([9, 1])
+            cols[0].write(f"Records in table: {st.session_state['selected_table']}")
+            if cols[1].button("🔄"):
+                utils.set_table_content(runas=user if user else "")
+            st.table(st.session_state["table_content"])
+
+    # cols[3].selectbox(
+    #     "Data Masks",
+    #     options=[d["name"] for d in restcalls.list_datamasks().get("data", [])],
+    #     index=None,
+    #     key="selected_ddm",
+    # )
 
 
 def cdc():

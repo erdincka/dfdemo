@@ -8,7 +8,8 @@ logging.getLogger("watchdog.observers.inotify_buffer").setLevel(logging.WARNING)
 st.session_state.setdefault("logs", "")
 st.session_state.setdefault("source_dataframe", pd.DataFrame())
 
-import s3, utils, demos, constants
+import s3, utils, demos, constants, restcalls
+from config import logger
 
 
 def main():
@@ -45,6 +46,30 @@ def main():
         index=None,
     )
 
+    links_in_demovol = [
+        n["name"]
+        for n in utils.get_folder_list("/demovol")
+        if n["target"].startswith("mapr::table::")
+    ]
+
+    logger.debug(links_in_demovol)
+    table_name = sb.selectbox(
+        "Tables",
+        options=links_in_demovol,
+        on_change=utils.set_table_content,
+        key="selected_table",
+        index=None,
+        accept_new_options=True,
+    )
+
+    tbl_create = sb.button("New table")
+    if tbl_create and table_name:
+        sb.write(f"Create table: {restcalls.create_table(table_name)}")
+        sb.write(f"Create column family: {restcalls.create_cf(table_name)}")
+        sb.write(
+            f'Create DDM on creditcard: {restcalls.set_datamask(table_name, "creditcard", "mrddm_last4")}'
+        )
+
     demo_list = list(demos.DEMO_LIST.keys())
 
     tabs = st.tabs(demo_list)
@@ -57,10 +82,12 @@ def main():
 
     # List S3 bucket content
     if st.session_state.get("bucket_content", None):
+        st.write(f"Bucket {st.session_state['selected_bucket']} objects:")
         st.table(st.session_state["bucket_content"])
 
-    # List folder  content
+    # List folder content
     if st.session_state.get("folder_content", None):
+        st.write(f"Folder {st.session_state['selected_folder']} content:")
         st.table(st.session_state["folder_content"])
 
     # Enable AI chat
