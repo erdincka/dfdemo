@@ -28,7 +28,9 @@ def main():
     cols = sb.columns(3)
     for idx, lnk in enumerate(urls + apps):
         col = cols[idx % 3]
-        col.link_button(lnk["name"], lnk["url"], help=lnk["url"])
+        col.link_button(
+            lnk["name"], lnk["url"], help=lnk["url"], use_container_width=True
+        )
 
     sb.selectbox(
         "Buckets",
@@ -65,7 +67,7 @@ def main():
     tbl_create = sb.button("New table")
     if tbl_create and table_name:
         sb.write(f"Create table: {restcalls.create_table(table_name)}")
-        sb.write(f"Create column family: {restcalls.create_cf(table_name)}")
+        # sb.write(f"Create column family: {restcalls.create_cf(table_name)}")
         sb.write(
             f'Create DDM on creditcard: {restcalls.set_datamask(table_name, "creditcard", "mrddm_last4")}'
         )

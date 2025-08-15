@@ -43,7 +43,7 @@ def set_datamask(table_name: str, column: str, datamask: str):
     try:
         return (
             httpx.post(
-                f"https://mapr:8443/rest/table/cf/column/datamask/set?path=/demovol/{table_name}&cfname=democf&name={column}&datamask={datamask}",
+                f"https://mapr:8443/rest/table/cf/column/datamask/set?path=/demovol/{table_name}&cfname=default&name={column}&datamask={datamask}",
                 auth=auth,
                 verify=False,
             )

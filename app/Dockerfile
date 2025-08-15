@@ -18,7 +18,7 @@ ENV PATH=/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbi
 
 RUN echo mapr > /root/mapr_password
 
-RUN apt -qq install -y ca-certificates mysql-client
+RUN apt -qq install -y ca-certificates mysql-client sudo vim 
 COPY create-demo-table.sql /
 COPY ./mysql.cnf /etc/mysql/conf.d/client.cnf
 

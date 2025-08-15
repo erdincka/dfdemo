@@ -27,6 +27,8 @@ RUN apt update && apt -qq upgrade -y && apt -qq install -y \
     mapr-nifi \
     mapr-drill \
     mapr-grafana \
+    mapr-opentsdb \
+    mapr-airflow \
     mapr-spark \
     mapr-spark-thriftserver \
     mysql-client

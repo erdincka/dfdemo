@@ -31,7 +31,7 @@ while [[ ! -f /home/mapr/tenant_user21_ticket.txt || ! -f /home/mapr/.aws/creden
 done
 
 # Configure secure client
-/opt/mapr/server/configure.sh -N dfab.io -c -secure -C mapr:7222
+/opt/mapr/server/configure.sh -N dfab.io -c -secure -C mapr:7222 -OT mapr
 
 # Obtain ticket for mapr user
 cat /root/mapr_password | maprlogin password -user mapr

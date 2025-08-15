@@ -260,33 +260,33 @@ def multi_tenancy():
 
 
 def datamasking():
-    st.markdown(
-        """### Dynamic Data Masking
-            
-    Works on JSON tables, with column families and across tables.
-
-    Create/re-use table, add records, set DDM and retrieve records as different users.
-
-    user11 has `unmaskedread` permission.
-
-    user12 has `read` permission.
-            
-    """
+    st.write("### Dynamic Data Masking")
+    st.write(
+        "Dynamically mask columns for users/groups, detailed information is on the [DDM docs](https://docs.ezmeral.hpe.com/datafabric-customer-managed/710/SecurityGuide/DDM.html)."
     )
+    st.write(
+        "Create/re-use table, add records, set DDM and retrieve records as different users."
+    )
+    st.write("user11 has `unmaskedread` permission.")
+    st.write("user12 has `read` permission.")
 
-    cols = st.columns(4, vertical_alignment="bottom")
     # table_name = cols[0].text_input("Table name", placeholder="mytable")
     table_name = st.session_state["selected_table"]
+
+    if not table_name:
+        st.markdown("#### 👈 Select a table to start!")
+
+    cols = st.columns(4, vertical_alignment="bottom")
 
     # Allow adding records
     if table_name:
         if cols[0].button(
-            "✨",
-            help=f"Add random records to the table {table_name}",
+            "Add new records",
+            help=f"Add new json documents to the table {table_name}",
         ):
             try:
                 docs = utils.sample_creditcards(1)
-                st.write(f"Sending records to {table_name}")
+                st.write(f"Sending docs to {table_name}")
                 st.table(docs)
                 st.write(restcalls.add_documents(table_name, docs))
             except Exception as error:
@@ -324,7 +324,7 @@ def cdc():
 
 
 def mesh():
-    st.link_button("Mesh", "http://docker.kayalab.uk:3005/")
+    st.link_button("Mesh", "http://docker.kayalab.uk:3005/mesh/")
 
 
 DEMO_LIST = {

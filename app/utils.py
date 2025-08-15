@@ -216,11 +216,19 @@ def APPs(hostname: str):
             )
         if is_port_open(8780):
             res.append(
-                {"name": "AF", "help": "Airflow", "url": f"https://{hostname}:8780"}
+                {
+                    "name": "Airflow",
+                    "help": "Airflow",
+                    "url": f"https://{hostname}:8780",
+                }
             )
         if is_port_open(12443):
             res.append(
-                {"name": "NF", "help": "NiFi", "url": f"https://{hostname}:12443/nifi"}
+                {
+                    "name": "NiFi",
+                    "help": "NiFi",
+                    "url": f"https://{hostname}:12443/nifi",
+                }
             )
 
     return res
