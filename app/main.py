@@ -12,9 +12,7 @@ import s3, utils, demos, constants, restcalls
 from config import logger
 
 
-def main():
-    st.set_page_config(page_title="HPE Data Fabric Demo", layout="wide")
-
+def sidebar():
     # Session settings & vars
     hostname = utils.get_public_hostname()
     urls = utils.URLs(hostname)
@@ -64,13 +62,24 @@ def main():
         accept_new_options=True,
     )
 
-    tbl_create = sb.button("New table")
-    if tbl_create and table_name:
-        sb.write(f"Create table: {restcalls.create_table(table_name)}")
-        # sb.write(f"Create column family: {restcalls.create_cf(table_name)}")
-        sb.write(
-            f'Create DDM on creditcard: {restcalls.set_datamask(table_name, "creditcard", "mrddm_last4")}'
-        )
+    if table_name and table_name not in links_in_demovol:
+        if sb.button(f"Create table '{table_name}'"):
+            sb.write(f"Create table: {restcalls.create_table(table_name)}")
+            # sb.write(f"Create column family: {restcalls.create_cf(table_name)}")
+            # sb.write(
+            #     f'Create DDM on creditcard: {restcalls.set_datamask(table_name, "creditcard", "mrddm_last4")}'
+            # )
+
+    sb.markdown(
+        """
+        Learn more about [HPE Data Fabric](https://docs.ezmeral.hpe.com/datafabric-customer-managed/710/MapROverview/c_overview_intro.html)
+                """
+    )
+
+
+def main():
+    st.set_page_config(page_title="HPE Data Fabric Demo", layout="wide")
+    sidebar()
 
     demo_list = list(demos.DEMO_LIST.keys())
 
@@ -99,12 +108,6 @@ def main():
     # Log Output
     with st.expander("Logs"):
         st.code(st.session_state.get("logs", ""), language="text", height=140)
-
-    st.markdown(
-        """
-        Learn more about [HPE Data Fabric](https://docs.ezmeral.hpe.com/datafabric-customer-managed/710/MapROverview/c_overview_intro.html)
-                """
-    )
 
 
 if __name__ == "__main__":

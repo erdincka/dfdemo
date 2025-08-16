@@ -68,7 +68,6 @@ mkdir /t1
 mkdir /t2
 # save the original fuse.conf
 cp /opt/mapr/conf/fuse.conf /opt/mapr/conf/fuse.orig
-apt -qq install -y sudo
 
 echo "[ $(date) ] CREDENTIALS:"
 echo "Cluster Admin: mapr/mapr"

@@ -14,7 +14,24 @@ import restcalls
 
 
 def inout():
-    if st.button("Publish sample data to 'incoming' topic"):
+    st.write(
+        """
+        To show basic data ingestion capabilities, we've prepared few examples.
+
+        You can pick a data source, which could be uploading a json or csv file, a REST query to NASA image search API, or a Data Fabric stream.
+
+        Once you have data in the *incoming* dataframe, you can select the destination location (S3 bucket or filesystem) and its format (ie, csv, json, parquet).
+
+        Select Bucket or Folder from the sidebar to view their content.
+        
+        > Open logs to see messages.
+        """
+    )
+
+    if st.button(
+        "Publish sample data to *incoming* topic",
+        help='To use "Stream" source, publish some messages into it.',
+    ):
         utils.sample_to_incoming()
 
     cols = st.columns(2, border=True)
@@ -267,45 +284,71 @@ def datamasking():
     st.write(
         "Create/re-use table, add records, set DDM and retrieve records as different users."
     )
-    st.write("user11 has `unmaskedread` permission.")
-    st.write("user12 has `read` permission.")
+    st.write("*mapr* has `unmaskedread` permission.")
+    st.write("*public* has `read` permission.")
 
-    # table_name = cols[0].text_input("Table name", placeholder="mytable")
     table_name = st.session_state["selected_table"]
 
-    if not table_name:
-        st.markdown("#### 👈 Select a table to start!")
-
-    cols = st.columns(4, vertical_alignment="bottom")
-
-    # Allow adding records
     if table_name:
-        if cols[0].button(
-            "Add new records",
-            help=f"Add new json documents to the table {table_name}",
+
+        # Show/set masks on table
+        st.write(f"### Masks on {table_name}:")
+        st.table(restcalls.get_datamasks(table_name=table_name))
+        # Set DDM
+        masks, fields, _, actions = st.columns(
+            [3, 3, 4, 2], vertical_alignment="bottom"
+        )
+        action1, action2 = actions.columns(2, vertical_alignment="bottom")
+        if action2.button("🔎", key="seeDDMtypes", help="Show DDM predefined types"):
+            utils.show_ddm_types()
+
+        selected_mask = masks.selectbox(
+            "Mask Types",
+            options=[d["name"] for d in restcalls.list_datamasks()],
+            index=None,
+            key="selected_mask",
+        )
+        selected_field = fields.selectbox(
+            "Field",
+            options=["name", "creditcard", "address", "mobile", "ssn", "iban"],
+            index=None,
+            key="selected_field",
+        )
+        if (
+            selected_field
+            and selected_mask
+            and action1.button(":rocket:", help="Set DDM for field")
+        ):
+            restcalls.set_datamask(table_name, selected_field, selected_mask)
+
+        # List table content
+        read_as_command, _, actions = st.columns([3, 7, 2], vertical_alignment="bottom")
+        action1, action2 = actions.columns(2, vertical_alignment="bottom")
+
+        runas_user = read_as_command.selectbox(
+            "Read table as", options=["mapr", "user11", "user12"]
+        )
+
+        if action1.button("🔄", help="Refresh"):
+            utils.set_table_content(runas=runas_user if runas_user else "")
+        if action2.button(
+            "➕",
+            help="Add new json documents",
         ):
             try:
                 docs = utils.sample_creditcards(1)
-                st.write(f"Sending docs to {table_name}")
+                st.write(f"#### Sending docs to {table_name}")
                 st.table(docs)
                 st.write(restcalls.add_documents(table_name, docs))
             except Exception as error:
                 st.error(error)
-        user = cols[2].selectbox("User", options=["user11", "user12"])
-        # List table content
+
         if st.session_state.get("table_content", None):
-            cols = st.columns([9, 1])
-            cols[0].write(f"Records in table: {st.session_state['selected_table']}")
-            if cols[1].button("🔄"):
-                utils.set_table_content(runas=user if user else "")
+            st.write(f"### Records in {st.session_state['selected_table']}:")
             st.table(st.session_state["table_content"])
 
-    # cols[3].selectbox(
-    #     "Data Masks",
-    #     options=[d["name"] for d in restcalls.list_datamasks().get("data", [])],
-    #     index=None,
-    #     key="selected_ddm",
-    # )
+    else:
+        st.markdown("### 👈 Select a table to start!")
 
 
 def cdc():

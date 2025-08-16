@@ -1,6 +1,7 @@
 import os
 import urllib.parse
 import httpx
+import streamlit as st
 
 from config import logger
 
@@ -23,20 +24,20 @@ def create_table(table_name: str):
         logger.error(error)
 
 
-def create_cf(table_name: str):
-    try:
-        return (
-            httpx.post(
-                f"https://mapr:8443/rest/table/cf/create?path=/demovol/{table_name}&cfname=democf&jsonpath=_id&force=1",
-                auth=auth,
-                verify=False,
-            )
-            .raise_for_status()
-            .json()
-            .get("status", "NOK")
-        )
-    except Exception as error:
-        logger.error(error)
+# def create_cf(table_name: str):
+#     try:
+#         return (
+#             httpx.post(
+#                 f"https://mapr:8443/rest/table/cf/create?path=/demovol/{table_name}&cfname=democf&jsonpath=_id&force=1",
+#                 auth=auth,
+#                 verify=False,
+#             )
+#             .raise_for_status()
+#             .json()
+#             .get("status", "NOK")
+#         )
+#     except Exception as error:
+#         logger.error(error)
 
 
 def set_datamask(table_name: str, column: str, datamask: str):
@@ -55,16 +56,34 @@ def set_datamask(table_name: str, column: str, datamask: str):
         logger.error(error)
 
 
+def get_datamasks(table_name: str):
+    try:
+        return (
+            httpx.get(
+                f"https://mapr:8443/rest/table/cf/column/datamask/get?path=/demovol/{table_name}&cfname=default",
+                auth=auth,
+                verify=False,
+            )
+            .raise_for_status()
+            .json()
+            .get("data", {})
+        )
+    except Exception as error:
+        logger.error(error)
+
+
+@st.cache_data
 def list_datamasks():
     try:
         return (
-            httpx.post(
+            httpx.get(
                 f"https://mapr:8443/rest/security/datamask/list",
                 auth=auth,
                 verify=False,
             )
             .raise_for_status()
             .json()
+            .get("data", [])
         )
     except Exception as error:
         logger.error(error)
@@ -75,6 +94,7 @@ def get_documents(table_path: str, auth: tuple[str, str] = auth):
     # Return if table does not exist
     if not os.path.islink(f"/mapr/dfab.io/demovol/{table_path}"):
         return
+    logger.info(f"Reading table {table_path} as user {auth[0]}")
     try:
         table_encoded = urllib.parse.quote_plus(f"/demovol/{table_path}")
         return (

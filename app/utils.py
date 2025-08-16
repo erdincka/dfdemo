@@ -251,7 +251,7 @@ def set_folder_list():
 
 
 def set_table_content(runas: str = ""):
-    logger.info("Reading table content as user: %s", runas)
+    logger.debug("Get table content as user: %s", runas)
     try:
         st.session_state["table_content"] = (
             restcalls.get_documents(st.session_state["selected_table"])
@@ -334,3 +334,8 @@ def get_folder_list(folder: str):
             logger.warning(f"Skipping {entry} – {e}")
 
     return content
+
+
+@st.dialog("DDM predefined types", width="large")
+def show_ddm_types():
+    st.table([(d["name"], d["description"]) for d in restcalls.list_datamasks()])
