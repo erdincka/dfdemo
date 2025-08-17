@@ -46,7 +46,7 @@ services:
 
   app:
     platform: linux/amd64
-    image: erdincka/app:0.1.6
+    image: erdincka/app:0.1.9
     build:
       context: ./app
       dockerfile: Dockerfile

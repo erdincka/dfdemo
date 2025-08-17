@@ -31,5 +31,8 @@ DEMO_FOLDERS = [
     "/",
     "/demovol",
     "/tenant1",
+    "/tenant1/user11",
+    "/tenant1/user12",
     "/tenant2",
+    "/tenant2/user21",
 ]

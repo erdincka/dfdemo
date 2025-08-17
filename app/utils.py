@@ -339,3 +339,11 @@ def get_folder_list(folder: str):
 @st.dialog("DDM predefined types", width="large")
 def show_ddm_types():
     st.table([(d["name"], d["description"]) for d in restcalls.list_datamasks()])
+
+
+def file_content(path: str):
+    res = ""
+    with open(path, "r") as f:
+        res = f.read()
+
+    return res

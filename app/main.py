@@ -84,12 +84,26 @@ def main():
     demo_list = list(demos.DEMO_LIST.keys())
 
     tabs = st.tabs(demo_list)
-    for demo, func in demos.DEMO_LIST.items():
-        with tabs[demo_list.index(demo)].container():
-            if func is not None:
-                func()
-            else:
-                "#### Not implemented!"
+    for name, demo in demos.DEMO_LIST.items():
+        with tabs[demo_list.index(name)].container():
+            title, info, keywords = st.columns([6, 1, 5], vertical_alignment="bottom")
+            title.write(f"#### {demo['title']}")
+            keywords.pills(
+                "Keywords",
+                demo["keywords"],
+                disabled=True,
+                default=None,
+                label_visibility="collapsed",
+            )
+            info.button(
+                "",
+                type="tertiary",
+                icon=":material/info:",
+                help=demo.get("flow", ""),
+                key=name,
+                disabled=True,
+            )
+            demo["function"]()
 
     # List S3 bucket content
     if st.session_state.get("bucket_content", None):

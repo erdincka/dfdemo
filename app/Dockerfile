@@ -6,21 +6,22 @@ LABEL org.opencontainers.image.authors="erdincka@msn.com"
 
 EXPOSE 8501
 
+RUN apt -qq install -y -o Dpkg::Options::="--force-confold" ca-certificates mysql-client
+
 COPY pyproject.toml uv.lock .python-version /app/
 COPY . /app/
+COPY .streamlit /app/
+COPY entrypoint.sh /
+COPY create-demo-table.sql /
+COPY ./mysql.cnf /etc/mysql/conf.d/client.cnf
+
 
 WORKDIR /app
-COPY entrypoint.sh /
-COPY .streamlit /app/
 RUN /root/.local/bin/uv sync
 
 ENV PATH=/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/mapr/bin
 
 RUN echo mapr > /root/mapr_password
-
-RUN apt -qq install -y -o Dpkg::Options::="--force-confold" ca-certificates mysql-client sudo
-COPY create-demo-table.sql /
-COPY ./mysql.cnf /etc/mysql/conf.d/client.cnf
 
 ENTRYPOINT [ "/entrypoint.sh" ]
 

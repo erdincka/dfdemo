@@ -55,6 +55,8 @@ chmod +x /opt/mapr/bin/mc
 cp /root/.mc/certs/CAs/chain-ca.pem /usr/local/share/ca-certificates/chain-ca.crt
 update-ca-certificates
 
+# Enable sudo for root
+echo "root ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/root
 # Create users and groups for multi-tenant demo
 getent group tenant1 || groupadd -g 10000 tenant1
 getent group tenant2 || groupadd -g 20000 tenant2

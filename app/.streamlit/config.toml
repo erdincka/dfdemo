@@ -5,6 +5,7 @@ headless = true
 # port = 8501
 # maxUploadSize = 2000
 folderWatchBlacklist = []
+# enableStaticServing = true
 
 [browser]
 gatherUsageStats = false

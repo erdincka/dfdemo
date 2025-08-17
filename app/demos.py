@@ -14,19 +14,6 @@ import restcalls
 
 
 def inout():
-    st.write(
-        """
-        To show basic data ingestion capabilities, we've prepared few examples.
-
-        You can pick a data source, which could be uploading a json or csv file, a REST query to NASA image search API, or a Data Fabric stream.
-
-        Once you have data in the *incoming* dataframe, you can select the destination location (S3 bucket or filesystem) and its format (ie, csv, json, parquet).
-
-        Select Bucket or Folder from the sidebar to view their content.
-        
-        > Open logs to see messages.
-        """
-    )
 
     if st.button(
         "Publish sample data to *incoming* topic",
@@ -112,13 +99,20 @@ def inout():
 
             if st.session_state["target"] == "s3":
                 buckets = s3.list_buckets()
-                # st.write(f"Writing to {st.session_state['target']} at {st.session_state['destination']} using {st.session_state['format']}")
-                # if st.session_state.get('target', None) and st.session_state.get('format', None) and st.session_state.get('destination', None):
-                bucket = st.selectbox("Select Bucket", options=buckets)
-                new_bucket = st.text_input("Or Create New Bucket", placeholder="demobk")
-                destination = new_bucket if new_bucket else bucket
+                destination = st.selectbox(
+                    "Select Bucket",
+                    options=buckets,
+                    accept_new_options=True,
+                    index=None,
+                )
+                # existing, newbucket = st.columns(2)
+                # bucket = existing.selectbox("Select Bucket", options=buckets)
+                # new_bucket = newbucket.text_input(
+                #     "Or Create New Bucket", placeholder="new bucket"
+                # )
+                # destination = new_bucket if new_bucket else bucket
 
-                if bucket and st.session_state["format"]:
+                if destination and st.session_state["format"]:
                     df = st.session_state["source_dataframe"]
                     # Determine content type based on format
                     content_type = "text/csv"
@@ -127,8 +121,7 @@ def inout():
                     elif st.session_state.get("format", None) == "parquet":
                         content_type = "application/octet-stream"
 
-                    putobject = st.button("Put")
-                    if putobject and destination:
+                    if st.button("Put"):
                         filename = f"demofile.{'csv' if content_type == 'text/csv' else 'json' if content_type == 'application/json' else 'parquet'}"
                         if s3.put(
                             df=df,
@@ -202,30 +195,12 @@ def inout():
 def multi_tenancy():
     st.markdown(
         """
-        ### Multi Tenant Filesystem Access with Data Fabric
-        
-        Data Fabric is configured with 2 tenants, `tenant1` and `tenant2`
-        
-        Tenant are assigned to users:
-
-            user11 & user12 belongs to tenant1
-        
-            user21 belongs to tenant2
-        
-        `user11` in `tenant1` is configured with read-write access, and `user12` in `tenant1` is configured with read-only access, using these commands at volume creation:
-
-            /opt/mapr/bin/maprcli volume create -name tenant1Vol -path /tenant1 -tenantuser user11 -readAce 'g:tenant1' -writeAce 'u:user11' -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false
-            /opt/mapr/bin/maprcli volume create -name tenant2Vol -path /tenant2 -tenantuser user21 -readAce 'g:tenant2' -writeAce 'u:user21' -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false
-
-
-        By running these commands, we can see the results of various read and write operations for these users, against the mounted `tenant1` filesystem at /t1 mountpoint.
+        Run these commands, the results of various read and write operations for these users, against the mounted `tenant1` filesystem at /t1 mountpoint.
         
     """
     )
 
-    if st.button(
-        "Run commands for create/read/write operations with different users - commands are listed in the code section"
-    ):
+    if st.button("Run"):
         for out in utils.run_command_with_output(
             """
             echo "Update service with user11's ticket"
@@ -237,16 +212,16 @@ def multi_tenancy():
             service mapr-posix-client-basic status 2> /dev/null
             while [ ! -d /t1/user11 ]; do sleep 2; done # ensure mount is completed
             echo "/t1 mounted!"
-            echo "List /t1/ as user11"; sudo -u user11 ls -la /t1/
-            echo "List /t1/ as user12"; sudo -u user12 ls -la /t1/
-            echo "Tenant2 user user21 cannot access /t1/, running ls /t1 should return nothing"; sudo -u user21 ls -la /t1/ || echo "ls /t1/ failed!"
+            echo "List /t1/ as user11: "; sudo -u user11 ls -la /t1/
+            echo "List /t1/ as user12: "; sudo -u user12 ls -la /t1/
+            echo "Tenant2 user user21 cannot access /t1/, running ls /t1 should return nothing: "; sudo -u user21 ls -la /t1/ || echo "ls /t1/ failed as user21!"
             echo "user11 has read/write ACE, and user12 has only read ACE on /t1"
-            echo "Write file as user11, should return file"; fname=$(mktemp | cut -d'/' -f3); sudo -u user11 touch /t1/user11/$fname; sudo -u user11 ls -l /t1/user11/$fname
-            echo "Write file as user12, should fail with permission error even for their own dir"; fname=$(mktemp | cut -d'/' -f3); sudo -u user12 touch /t1/user12/$fname || echo "create /t1/user12/$fname failed"; sudo -u user12 ls -l $fname || echo "ls /t1/user12/$fname failed"
-            echo "file/dir ACLs are also respected, user11 write to user12 owned folder, should fail with permission error"; fname=$(mktemp | cut -d'/' -f3); sudo -u user11 touch /t1/user12/$fname || echo "create /t1/user12/$fname failed for user11"
+            echo "Write file as user11, should return file: "; fname=$(mktemp | cut -d'/' -f3); sudo -u user11 touch /t1/user11/$fname; sudo -u user11 ls -l /t1/user11/$fname
+            echo "Write file as user12, should fail with permission error even for their own dir: "; fname=$(mktemp | cut -d'/' -f3); sudo -u user12 touch /t1/user12/$fname || echo "create /t1/user12/$fname failed"; sudo -u user12 ls -l $fname || echo "ls /t1/user12/$fname failed"
+            echo "file/dir ACLs are also respected, user11 write to user12 owned folder, should fail with permission error: "; fname=$(mktemp | cut -d'/' -f3); sudo -u user11 touch /t1/user12/$fname || echo "create /t1/user12/$fname failed for user11"
             """
         ):
-            st.code(out, language="log")
+            st.code(out, language="shell")
 
     with st.expander("Code"):
         with st.expander("Create tenant users & volumes"):
@@ -277,7 +252,6 @@ def multi_tenancy():
 
 
 def datamasking():
-    st.write("### Dynamic Data Masking")
     st.write(
         "Dynamically mask columns for users/groups, detailed information is on the [DDM docs](https://docs.ezmeral.hpe.com/datafabric-customer-managed/710/SecurityGuide/DDM.html)."
     )
@@ -317,7 +291,7 @@ def datamasking():
         if (
             selected_field
             and selected_mask
-            and action1.button(":rocket:", help="Set DDM for field")
+            and action1.button("Set DDM", help="Set DDM for field")
         ):
             restcalls.set_datamask(table_name, selected_field, selected_mask)
 
@@ -326,7 +300,7 @@ def datamasking():
         action1, action2 = actions.columns(2, vertical_alignment="bottom")
 
         runas_user = read_as_command.selectbox(
-            "Read table as", options=["mapr", "user11", "user12"]
+            "Read table as", options=["mapr", "user11"]
         )
 
         if action1.button("🔄", help="Refresh"):
@@ -367,15 +341,86 @@ def cdc():
 
 
 def mesh():
-    st.link_button("Mesh", "http://docker.kayalab.uk:3005/mesh/")
+    # st.link_button("Mesh", "http://docker.kayalab.uk:3005/mesh/")
+    st.write("Use https://github.com/erdincka/catchx")
 
 
 DEMO_LIST = {
-    "Stream & Batch": inout,
-    "Multi-Tenancy": multi_tenancy,
-    "CDC": cdc,
-    "Data Mesh": mesh,
-    "DDM": datamasking,
-}
+    "⛲ Read & Write": {
+        "function": inout,
+        "title": "Data ingestion and multi-format data storage",
+        "keywords": [
+            "ingestion",
+            "kafka",
+            "stream",
+            "DB",
+            "json",
+            "parquet",
+            "s3",
+        ],
+        "flow": """
+        Pick a data source: Upload a json/csv file, query NASA image search API, or read from a message stream.
 
-logger.debug("Demos Loaded!")
+        Select the destination location, S3 bucket or filesystem, and select the format (csv/json/parquet).
+
+        Pick the destionation bucket or folder from the sidebar to view their content.
+
+        > Open logs to see messages.
+        """,
+    },
+    "👥 Multi-Tenancy": {
+        "function": multi_tenancy,
+        "title": "Tenant Isolation",
+        "keywords": [
+            "security",
+            "users",
+            "ACE",
+            "access control",
+        ],
+        "flow": """
+        Data Fabric is configured with 2 tenants, `tenant1` and `tenant2`
+        
+        Tenant are assigned to users:
+
+            user11 & user12 belongs to tenant1
+        
+            user21 belongs to tenant2
+
+        `user11` in `tenant1` is configured with read-write access, and `user12` in `tenant1` is configured with read-only access, using these commands at volume creation:
+
+            /opt/mapr/bin/maprcli volume create -name tenant1Vol -path /tenant1 -tenantuser user11 -readAce 'g:tenant1' -writeAce 'u:user11' -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false
+            /opt/mapr/bin/maprcli volume create -name tenant2Vol -path /tenant2 -tenantuser user21 -readAce 'g:tenant2' -writeAce 'u:user21' -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false
+
+        """,
+    },
+    "🛰️ CDC": {
+        "function": cdc,
+        "title": "Capture Data Changes in Real-time",
+        "flow": f"""
+        We've set up a MySQL DB with `binlog` enabled for `demodb`.
+
+        Provided NiFi flow contains processors to consume these transaction logs and then in turn writes them to S3 endpoint in parquet format. 
+
+        Follow the instructions for end to end demo flow: https://github.com/erdincka/df-cdc 
+        """,
+        "keywords": [
+            "Change data capture",
+            "stream",
+            "RDBMS",
+        ],
+    },
+    "🕸️ Data Mesh": {
+        "function": mesh,
+        "title": "Build a Data Mesh",
+        "keywords": [
+            "RDBMS",
+            "real-time",
+            "stream",
+        ],
+    },
+    "🕶️ DDM": {
+        "function": datamasking,
+        "title": "Dynamic Data Masking on Tables",
+        "keywords": ["security", "confidential", "data masking"],
+    },
+}
