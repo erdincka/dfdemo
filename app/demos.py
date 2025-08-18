@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from uuid import uuid4
 import streamlit as st
 import pandas as pd
 import json
@@ -195,33 +196,149 @@ def inout():
 def multi_tenancy():
     st.markdown(
         """
-        Run these commands, the results of various read and write operations for these users, against the mounted `tenant1` filesystem at /t1 mountpoint.
+        This section allows you to select a tenant, which will mount that tenant's volume with its admin user (`user11` or `user21`), then you can run list and read and write commands against that tenant mount points as different users.
+
+        `user11@tenant1` and `user21@tenant2` have *read/write* ACE for their respective tenant volumes, and `user12` has *read* ACE on its own tenant volume (mounted at `/t1`)
         
     """
     )
 
-    if st.button("Run"):
+    tenant = st.segmented_control("Select Tenant:", ["Tenant1", "Tenant2"])
+
+    if tenant:
+        user = "user11" if tenant == "Tenant1" else "user21"
+        mount_point = "/t1" if tenant == "Tenant1" else "/t2"
+        export_path = "/tenant1" if tenant == "Tenant1" else "/tenant2"
+        user_path = "/t1/user11" if tenant == "Tenant1" else "/t2/user21"
+
         for out in utils.run_command_with_output(
-            """
-            echo "Update service with user11's ticket"
-            sed -i 's|^fuse.ticketfile.location=.*|fuse.ticketfile.location=/home/mapr/tenant_user11_ticket.txt|' /opt/mapr/conf/fuse.conf
-            sed -i 's|^fuse.mount.point=.*|fuse.mount.point=/t1|' /opt/mapr/conf/fuse.conf
-            sed -i 's|^.*fuse.export=.*|fuse.export=/dfab.io/tenant1/|' /opt/mapr/conf/fuse.conf
+            f"""
+            sed -i 's|^fuse.ticketfile.location=.*|fuse.ticketfile.location=/home/mapr/tenant_{user}_ticket.txt|' /opt/mapr/conf/fuse.conf
+            sed -i 's|^fuse.mount.point=.*|fuse.mount.point={mount_point}|' /opt/mapr/conf/fuse.conf
+            sed -i 's|^.*fuse.export=.*|fuse.export=/dfab.io/{export_path}/|' /opt/mapr/conf/fuse.conf
             echo "Restarting Posix client to remount tenant volume"
             service mapr-posix-client-basic restart 2>&1 > /dev/null
             service mapr-posix-client-basic status 2> /dev/null
-            while [ ! -d /t1/user11 ]; do sleep 2; done # ensure mount is completed
-            echo "/t1 mounted!"
-            echo "List /t1/ as user11: "; sudo -u user11 ls -la /t1/
-            echo "List /t1/ as user12: "; sudo -u user12 ls -la /t1/
-            echo "Tenant2 user user21 cannot access /t1/, running ls /t1 should return nothing: "; sudo -u user21 ls -la /t1/ || echo "ls /t1/ failed as user21!"
-            echo "user11 has read/write ACE, and user12 has only read ACE on /t1"
-            echo "Write file as user11, should return file: "; fname=$(mktemp | cut -d'/' -f3); sudo -u user11 touch /t1/user11/$fname; sudo -u user11 ls -l /t1/user11/$fname
-            echo "Write file as user12, should fail with permission error even for their own dir: "; fname=$(mktemp | cut -d'/' -f3); sudo -u user12 touch /t1/user12/$fname || echo "create /t1/user12/$fname failed"; sudo -u user12 ls -l $fname || echo "ls /t1/user12/$fname failed"
-            echo "file/dir ACLs are also respected, user11 write to user12 owned folder, should fail with permission error: "; fname=$(mktemp | cut -d'/' -f3); sudo -u user11 touch /t1/user12/$fname || echo "create /t1/user12/$fname failed for user11"
-            """
+            while [ ! -d {user_path} ]; do sleep 2; done # ensure mount is completed
+            echo "{mount_point} mounted with {user} ticket!"
+        """
         ):
             st.code(out, language="shell")
+
+        runas = st.segmented_control("User", options=["user11", "user12", "user21"])
+        list_command = st.segmented_control(
+            "List",
+            options=[
+                "ls -la /t1",
+                "ls -la /t2",
+                "ls -la /t1/user11",
+                "ls -la /t1/user12",
+                "ls -la /t1/user21/",
+            ],
+        )
+
+        read_command = st.segmented_control(
+            "Read",
+            options=[
+                "cat /t1/user11/*",
+                "touch /t1/user12/*",
+                "touch /t2/user21/*",
+            ],
+        )
+
+        write_command = st.segmented_control(
+            "Write",
+            options=[
+                f"touch /t1/user11/{uuid4().hex}",
+                f"touch /t1/user12/{uuid4().hex}",
+                f"touch /t2/user21/{uuid4().hex}",
+            ],
+        )
+
+        command = (
+            list_command
+            if list_command
+            else (
+                read_command
+                if read_command
+                else write_command if write_command else None
+            )
+        )
+
+        if runas and command:
+            with st.echo():
+                for out in utils.run_command_with_output(f"sudo -u {user} {command}"):
+                    st.code(out, language="shell")
+
+    # if st.button(
+    #     "Mount as tenant2\\user21 (admin)",
+    #     help="Mount /tenant2 volume as user21 by replacing tenantticket",
+    #     key="btn_t2_mnt",
+    # ):
+    #     for out in utils.run_command_with_output(
+    #         """
+    #         sed -i 's|^fuse.ticketfile.location=.*|fuse.ticketfile.location=/home/mapr/tenant_user21_ticket.txt|' /opt/mapr/conf/fuse.conf
+    #         sed -i 's|^fuse.mount.point=.*|fuse.mount.point=/t2|' /opt/mapr/conf/fuse.conf
+    #         sed -i 's|^.*fuse.export=.*|fuse.export=/dfab.io/tenant2/|' /opt/mapr/conf/fuse.conf
+    #         echo "Restarting Posix client to remount tenant volume"
+    #         service mapr-posix-client-basic restart 2>&1 > /dev/null
+    #         service mapr-posix-client-basic status 2> /dev/null
+    #         while [ ! -d /t2/user21 ]; do sleep 2; done # ensure mount is completed
+    #         echo "/t2 mounted with user21 ticket!"
+    #     """
+    #     ):
+    #         st.code(out, language="shell")
+
+    # for t in ["tenant1", "tenant2"]:
+    #     if st.button(
+    #         "List /t1/ as user11 (admin@tenant1)",
+    #         help="Runs `sudo -u user11 ls -la /t1`",
+    #         key=f"btn_{t}_ls_t1_u1",
+    #     ):
+    #         for out in utils.run_command_with_output("sudo -u user11 ls -la /t1"):
+    #             st.code(out, language="shell")
+
+    #     if st.button(
+    #         "List /t1/ as user12 (user@tenant1)",
+    #         help="Runs `sudo -u user12 ls -la /t1`",
+    #         key=f"btn_{t}_ls_t1_u2",
+    #     ):
+    #         for out in utils.run_command_with_output("sudo -u user12 ls -la /t1"):
+    #             st.code(out, language="shell")
+
+    #     if st.button(
+    #         "List /t1/ as user21 (admin@tenant2)",
+    #         help="Runs `sudo -u user21 ls -la /t1`",
+    #         key=f"btn_{t}_ls_t1_u3",
+    #     ):
+    #         for out in utils.run_command_with_output("sudo -u user21 ls -la /t1"):
+    #             st.code(out, language="shell")
+
+    #     if st.button(
+    #         "List /t2/ as user11 (admin@tenant1)",
+    #         help="Runs `sudo -u user11 ls -la /t2`",
+    #         key=f"btn_{t}_ls_t2_u1",
+    #     ):
+    #         for out in utils.run_command_with_output("sudo -u user11 ls -la /t2"):
+    #             st.code(out, language="shell")
+
+    #     if st.button(
+    #         "List /t2/ as user21 (admin@tenant2)",
+    #         help="Runs `sudo -u user21 ls -la /t2`",
+    #         key=f"btn_{t}_ls_t2_u2",
+    #     ):
+    #         for out in utils.run_command_with_output("sudo -u user21 ls -la /t2"):
+    #             st.code(out, language="shell")
+
+    # if st.button("Run"):
+    #     for out in utils.run_command_with_output(
+    #         """
+    #         echo "Write file as user11, should return file: "; fname=$(mktemp | cut -d'/' -f3); sudo -u user11 touch /t1/user11/$fname; sudo -u user11 ls -l /t1/user11/$fname
+    #         echo "Write file as user12, should fail with permission error even for their own dir: "; fname=$(mktemp | cut -d'/' -f3); sudo -u user12 touch /t1/user12/$fname || echo "create /t1/user12/$fname failed"; sudo -u user12 ls -l $fname || echo "ls /t1/user12/$fname failed"
+    #         echo "file/dir ACLs are also respected, user11 write to user12 owned folder, should fail with permission error: "; fname=$(mktemp | cut -d'/' -f3); sudo -u user11 touch /t1/user12/$fname || echo "create /t1/user12/$fname failed for user11"
+    #         """
+    #     ):
+    #         st.code(out, language="shell")
 
     with st.expander("Code"):
         with st.expander("Create tenant users & volumes"):
@@ -247,8 +364,8 @@ def multi_tenancy():
                 """,
                 language="shell",
             )
-        with st.expander("Multi-tenancy demo steps"):
-            st.code(inspect.getsource(multi_tenancy))
+        # with st.expander("Multi-tenancy demo steps"):
+        #     st.code(inspect.getsource(multi_tenancy))
 
 
 def datamasking():
