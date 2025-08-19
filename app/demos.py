@@ -1,10 +1,11 @@
 import os
 from pathlib import Path
-from uuid import uuid4
 import streamlit as st
 import pandas as pd
 import json
 import inspect
+
+import mysql.connector
 
 import fragments
 from config import logger
@@ -394,6 +395,49 @@ def cdc():
         - Embed dashboard for realtime updates within st UI
     """
     )
+
+    # --- New: Verify MySQL connection to 'demodb' on host 'db' ---
+    try:
+        conn = mysql.connector.connect(
+            host="db",
+            user="mysql",
+            password="Admin123.",
+            database="demodb",
+            connection_timeout=5,
+        )
+        if conn.is_connected():
+            st.success("✅ MySQL 'demodb' connection successful.")
+        # --------------------- Verify CDC settings --------------------------------
+        # cdc_settings = {}
+        # try:
+        #     cursor = conn.cursor()
+        #     # Check if binary logging is enabled
+        #     cursor.execute("SELECT @@global.log_bin;")
+        #     # cursor.execute("SHOW VARIABLES LIKE 'log_bin';")
+        #     cdc_settings["log_bin"] = cursor.fetchone()[0]
+        #     # Check binlog format (should be ROW for CDC)
+        #     cursor.execute("SELECT @@global.binlog_format;")
+        #     # cursor.execute("SHOW VARIABLES LIKE 'binlog_format';")
+        #     cdc_settings["binlog_format"] = cursor.fetchone()[0]
+        #     # Optional: check row image (FULL is safest)
+        #     cursor.execute("SELECT @@global.binlog_row_image;")
+        #     # cursor.execute("SHOW VARIABLES LIKE 'binlog_row_image';")
+        #     cdc_settings["binlog_row_image"] = cursor.fetchone()[0]
+        #     # Optional: check whether binary log file exists
+        #     cursor.execute("SHOW MASTER STATUS;")
+        #     master_status = cursor.fetchone()
+        #     cdc_settings["master_status"] = master_status
+        # except mysql.connector.Error as err:
+        #     st.error(f"❌ Failed to query CDC settings: {err}")
+        # else:
+        #     st.write("### CDC‑related MySQL settings")
+        #     st.table(cdc_settings)
+        # finally:
+        #     cursor.close()
+
+        conn.close()
+    except mysql.connector.Error as err:
+        st.error(f"❌ MySQL connection failed: {err}")
 
 
 def mesh():

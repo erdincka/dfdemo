@@ -11,7 +11,8 @@ dependencies = [
     "boto3>=1.39.14",
     "faker>=37.5.3",
     "httpx>=0.28.1",
-    "mapr-streams-python>=2.6.0",
+    "mapr-streams-python>=2.6.0; sys_platform == 'linux'",
+    "mysql-connector-python==8.4.0",
     "streamlit>=1.46.1",
     "streamlit-js-eval>=0.1.7",
 ]
