@@ -351,19 +351,23 @@ def datamasking():
         read_as_command, _, actions = st.columns([3, 7, 2], vertical_alignment="bottom")
         action1, action2 = actions.columns(2, vertical_alignment="bottom")
 
-        runas_user = read_as_command.selectbox(
-            "Read table as", options=["mapr", "user11"]
+        runas_user = read_as_command.segmented_control(
+            "Read table as",
+            options=["mapr", "user11"],
         )
+        if runas_user:
+            utils.set_table_content(runas=runas_user if runas_user else "")
 
         if action1.button("🔄", help="Refresh"):
             utils.set_table_content(runas=runas_user if runas_user else "")
         if action2.button(
-            "➕",
+            # ":material/queue:",
+            "🆕",
             help="Add new json documents",
         ):
             try:
-                docs = utils.sample_creditcards(1)
-                st.write(f"#### Sending docs to {table_name}")
+                docs = utils.sample_creditcards(2)
+                st.write(f"#### Sending records to {table_name}")
                 st.table(docs)
                 st.write(restcalls.add_documents(table_name, docs))
             except Exception as error:
