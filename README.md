@@ -6,6 +6,8 @@
 
 - Wait for all containers to start, might take 15+ minutes!
 
+- Wait for `app` container to become *Ready*: Run `docker ps -l` and ensure "STATUS" shows **(healthy)**
+
 - Open port :8501 on docker host (if running locally, it would be http://localhost:8501/)
 
 ! 20GB+ memory required for docker.

@@ -6,6 +6,7 @@ import pandas as pd
 import json
 import inspect
 
+import fragments
 from config import logger
 import utils
 import constants
@@ -23,6 +24,7 @@ def inout():
         utils.sample_to_incoming()
 
     cols = st.columns(2, border=True)
+    # Source selection
     with cols[0]:
         st.title("Source")
         source = st.segmented_control(
@@ -81,7 +83,7 @@ def inout():
 
     input_record_count = len(st.session_state["source_dataframe"])
 
-    # Select the destination
+    # Destination selection
     with cols[1]:
         if input_record_count:
             st.title("Destination")
@@ -97,87 +99,118 @@ def inout():
                 format_func=str.capitalize,
                 key="format",
             )
-
-            if st.session_state["target"] == "s3":
-                buckets = s3.list_buckets()
-                destination = st.selectbox(
-                    "Select Bucket",
-                    options=buckets,
-                    accept_new_options=True,
-                    index=None,
-                )
-                # existing, newbucket = st.columns(2)
-                # bucket = existing.selectbox("Select Bucket", options=buckets)
-                # new_bucket = newbucket.text_input(
-                #     "Or Create New Bucket", placeholder="new bucket"
-                # )
-                # destination = new_bucket if new_bucket else bucket
-
-                if destination and st.session_state["format"]:
-                    df = st.session_state["source_dataframe"]
-                    # Determine content type based on format
-                    content_type = "text/csv"
-                    if st.session_state.get("format", None) == "json":
-                        content_type = "application/json"
-                    elif st.session_state.get("format", None) == "parquet":
-                        content_type = "application/octet-stream"
-
-                    if st.button("Put"):
-                        filename = f"demofile.{'csv' if content_type == 'text/csv' else 'json' if content_type == 'application/json' else 'parquet'}"
-                        if s3.put(
-                            df=df,
-                            bucket_name=destination,
-                            file_key=filename,
-                            content_type=content_type,
-                        ):
-                            st.success(f"{filename} uploaded to bucket {destination}")
-            elif st.session_state["target"] == "posix":
-                destination = st.selectbox(
-                    "Folder",
-                    options=[f["name"] for f in utils.get_folder_list("/demovol")],
-                    index=None,
-                    accept_new_options=True,
-                )
-                if (
-                    destination
-                    and st.session_state["format"]
-                    and st.button(
-                        "Save", help="Save to folder", key="btn_save_to_folder"
-                    )
-                ):
-                    os.makedirs(f"/mapr/dfab.io/demovol/{destination}", exist_ok=True)
-
-                    filename = f"demofile.{st.session_state['format']}"
-                    try:
-                        df = st.session_state["source_dataframe"]
-                        # Create the full path for saving
-                        save_path = Path(f"/app/{filename}")
-                        # Ensure directory exists
-                        save_path.parent.mkdir(parents=True, exist_ok=True)
-                        # Save based on format
-                        if format == "csv":
-                            df.to_csv(save_path.with_suffix(".csv"), index=False)
-                            st.success(f"Data saved as {save_path.with_suffix('.csv')}")
-                        elif format == "json":
-                            df.to_json(save_path.with_suffix(".json"), orient="records")
-                            st.success(
-                                f"Data saved as {save_path.with_suffix('.json')}"
-                            )
-                        elif format == "parquet":
-                            df.to_parquet(
-                                save_path.with_suffix(".parquet"), index=False
-                            )
-                            st.success(
-                                f"Data saved as {save_path.with_suffix('.parquet')}"
-                            )
-
-                    except Exception as e:
-                        st.error(f"Error saving file: {str(e)}")
+            st.text_input(
+                "Name",
+                placeholder="myfile",
+                icon=(
+                    "📁"
+                    if st.session_state.target == "posix"
+                    else ":material/data_object:"
+                ),
+                help="File or object name - no extension",
+                key="destination_name",
+            )
+        # S3 bucket selection
+        if st.session_state.get("target", "") == "s3":
+            buckets = s3.list_buckets()
+            st.selectbox(
+                "Bucket",
+                options=buckets,
+                accept_new_options=True,
+                index=None,
+                key="save_to_bucket",
+                help="Select or create a new bucket",
+            )
 
     # Show source data
     if input_record_count:
-        st.write(f"Source with {input_record_count} records.")
-        st.dataframe(st.session_state["source_dataframe"], height=200)
+        with st.expander(f"Source with {input_record_count} records."):
+            st.dataframe(st.session_state.source_dataframe, height=200)
+
+    # Data Transformation
+    st.write("Apply transformation (ie, ETL processing) on the incoming data")
+    if len(st.session_state.source_dataframe):
+        with st.expander("Data Transformation"):
+            fragments.data_transformation()
+            fragments.show_refined_data()
+
+    # Save to destination
+    if st.session_state.get("target", "") == "s3":
+        if (
+            st.session_state.save_to_bucket
+            and st.session_state.format
+            and st.session_state.destination_name
+        ):
+            df = (
+                st.session_state.refined_data
+                if len(st.session_state.refined_data)
+                else st.session_state["source_dataframe"]
+            )
+            # Determine content type based on format
+            content_type = "text/csv"
+            if st.session_state.get("format", None) == "json":
+                content_type = "application/json"
+            elif st.session_state.get("format", None) == "parquet":
+                content_type = "application/octet-stream"
+
+            if st.button("Put", type="primary"):
+                filename = f"{st.session_state.destination_name}.{'csv' if content_type == 'text/csv' else 'json' if content_type == 'application/json' else 'parquet'}"
+                if s3.put(
+                    df=df,
+                    bucket_name=st.session_state.save_to_bucket,
+                    file_key=filename,
+                    content_type=content_type,
+                ):
+                    st.success(
+                        f"{filename} uploaded to bucket {st.session_state.save_to_bucket}"
+                    )
+
+    elif st.session_state.get("target", "") == "posix":
+        # line = st.columns(2, vertical_alignment="bottom")
+        # destination = line[0].selectbox(
+        #     "Folder",
+        #     options=[f["name"] for f in utils.get_folder_list("/demovol")],
+        #     index=None,
+        #     accept_new_options=True,
+        # )
+        if (
+            # destination
+            st.session_state["format"]
+            and st.session_state["destination_name"]
+            and st.button(
+                "Save", help="Save to folder", key="btn_save_to_folder", type="primary"
+            )
+        ):
+            # os.makedirs(f"/mapr/dfab.io/demovol/{destination}", exist_ok=True)
+
+            filename = (
+                f"{st.session_state.destination_name}.{st.session_state['format']}"
+            )
+            try:
+                df = (
+                    st.session_state.refined_data
+                    if len(st.session_state.refined_data)
+                    else st.session_state["source_dataframe"]
+                )
+                # Create the full path for saving
+                save_path = Path(f"/mapr/dfab.io/demovol/{filename}")
+                # Ensure directory exists
+                # save_path.parent.mkdir(parents=True, exist_ok=True)
+                # Save based on format
+                logger.info(st.session_state["format"])
+                if st.session_state["format"] == "csv":
+                    df.to_csv(save_path.with_suffix(".csv"), index=False)
+                    st.success(f"Data saved as {save_path.with_suffix('.csv')}")
+                elif st.session_state["format"] == "json":
+                    df.to_json(save_path.with_suffix(".json"), orient="records")
+                    st.success(f"Data saved as {save_path.with_suffix('.json')}")
+                elif st.session_state["format"] == "parquet":
+                    df.to_parquet(save_path.with_suffix(".parquet"), index=False)
+                    st.success(f"Data saved as {save_path.with_suffix('.parquet')}")
+
+            except Exception as e:
+                st.error(f"Error saving file: {str(e)}")
+                logger.error(e)
 
     # Code viewers
     with st.expander("Code"):
@@ -203,142 +236,46 @@ def multi_tenancy():
     """
     )
 
-    tenant = st.segmented_control("Select Tenant:", ["Tenant1", "Tenant2"])
+    tenant = st.segmented_control(
+        "Select Tenant:",
+        ["Tenant1", "Tenant2"],
+        on_change=utils.remount_tenant,
+        key="selected_tenant",
+    )
 
     if tenant:
-        user = "user11" if tenant == "Tenant1" else "user21"
-        mount_point = "/t1" if tenant == "Tenant1" else "/t2"
-        export_path = "/tenant1" if tenant == "Tenant1" else "/tenant2"
-        user_path = "/t1/user11" if tenant == "Tenant1" else "/t2/user21"
 
-        for out in utils.run_command_with_output(
-            f"""
-            sed -i 's|^fuse.ticketfile.location=.*|fuse.ticketfile.location=/home/mapr/tenant_{user}_ticket.txt|' /opt/mapr/conf/fuse.conf
-            sed -i 's|^fuse.mount.point=.*|fuse.mount.point={mount_point}|' /opt/mapr/conf/fuse.conf
-            sed -i 's|^.*fuse.export=.*|fuse.export=/dfab.io/{export_path}/|' /opt/mapr/conf/fuse.conf
-            echo "Restarting Posix client to remount tenant volume"
-            service mapr-posix-client-basic restart 2>&1 > /dev/null
-            service mapr-posix-client-basic status 2> /dev/null
-            while [ ! -d {user_path} ]; do sleep 2; done # ensure mount is completed
-            echo "{mount_point} mounted with {user} ticket!"
-        """
-        ):
-            st.code(out, language="shell")
+        line = st.columns([3, 9])
 
-        runas = st.segmented_control("User", options=["user11", "user12", "user21"])
-        list_command = st.segmented_control(
-            "List",
+        runas = line[0].segmented_control(
+            "Run as", options=["user11", "user12", "user21"]
+        )
+
+        cmd = line[1].segmented_control(
+            "Command",
+            # default=None,
+            # index=None,
+            # placeholder="Select a command to run",
             options=[
                 "ls -la /t1",
                 "ls -la /t2",
                 "ls -la /t1/user11",
                 "ls -la /t1/user12",
-                "ls -la /t1/user21/",
-            ],
-        )
-
-        read_command = st.segmented_control(
-            "Read",
-            options=[
+                "ls -la /t2/user21/",
                 "cat /t1/user11/*",
-                "touch /t1/user12/*",
-                "touch /t2/user21/*",
+                "cat /t1/user12/*",
+                "cat /t2/user21/*",
+                f"touch /t1/user11/{uuid4().hex[:8]}",
+                f"touch /t1/user12/{uuid4().hex[:8]}",
+                f"touch /t2/user21/{uuid4().hex[:8]}",
             ],
         )
 
-        write_command = st.segmented_control(
-            "Write",
-            options=[
-                f"touch /t1/user11/{uuid4().hex}",
-                f"touch /t1/user12/{uuid4().hex}",
-                f"touch /t2/user21/{uuid4().hex}",
-            ],
-        )
+        st.info(f"Running `sudo -u {runas} {cmd}`")
 
-        command = (
-            list_command
-            if list_command
-            else (
-                read_command
-                if read_command
-                else write_command if write_command else None
-            )
-        )
-
-        if runas and command:
-            with st.echo():
-                for out in utils.run_command_with_output(f"sudo -u {user} {command}"):
-                    st.code(out, language="shell")
-
-    # if st.button(
-    #     "Mount as tenant2\\user21 (admin)",
-    #     help="Mount /tenant2 volume as user21 by replacing tenantticket",
-    #     key="btn_t2_mnt",
-    # ):
-    #     for out in utils.run_command_with_output(
-    #         """
-    #         sed -i 's|^fuse.ticketfile.location=.*|fuse.ticketfile.location=/home/mapr/tenant_user21_ticket.txt|' /opt/mapr/conf/fuse.conf
-    #         sed -i 's|^fuse.mount.point=.*|fuse.mount.point=/t2|' /opt/mapr/conf/fuse.conf
-    #         sed -i 's|^.*fuse.export=.*|fuse.export=/dfab.io/tenant2/|' /opt/mapr/conf/fuse.conf
-    #         echo "Restarting Posix client to remount tenant volume"
-    #         service mapr-posix-client-basic restart 2>&1 > /dev/null
-    #         service mapr-posix-client-basic status 2> /dev/null
-    #         while [ ! -d /t2/user21 ]; do sleep 2; done # ensure mount is completed
-    #         echo "/t2 mounted with user21 ticket!"
-    #     """
-    #     ):
-    #         st.code(out, language="shell")
-
-    # for t in ["tenant1", "tenant2"]:
-    #     if st.button(
-    #         "List /t1/ as user11 (admin@tenant1)",
-    #         help="Runs `sudo -u user11 ls -la /t1`",
-    #         key=f"btn_{t}_ls_t1_u1",
-    #     ):
-    #         for out in utils.run_command_with_output("sudo -u user11 ls -la /t1"):
-    #             st.code(out, language="shell")
-
-    #     if st.button(
-    #         "List /t1/ as user12 (user@tenant1)",
-    #         help="Runs `sudo -u user12 ls -la /t1`",
-    #         key=f"btn_{t}_ls_t1_u2",
-    #     ):
-    #         for out in utils.run_command_with_output("sudo -u user12 ls -la /t1"):
-    #             st.code(out, language="shell")
-
-    #     if st.button(
-    #         "List /t1/ as user21 (admin@tenant2)",
-    #         help="Runs `sudo -u user21 ls -la /t1`",
-    #         key=f"btn_{t}_ls_t1_u3",
-    #     ):
-    #         for out in utils.run_command_with_output("sudo -u user21 ls -la /t1"):
-    #             st.code(out, language="shell")
-
-    #     if st.button(
-    #         "List /t2/ as user11 (admin@tenant1)",
-    #         help="Runs `sudo -u user11 ls -la /t2`",
-    #         key=f"btn_{t}_ls_t2_u1",
-    #     ):
-    #         for out in utils.run_command_with_output("sudo -u user11 ls -la /t2"):
-    #             st.code(out, language="shell")
-
-    #     if st.button(
-    #         "List /t2/ as user21 (admin@tenant2)",
-    #         help="Runs `sudo -u user21 ls -la /t2`",
-    #         key=f"btn_{t}_ls_t2_u2",
-    #     ):
-    #         for out in utils.run_command_with_output("sudo -u user21 ls -la /t2"):
-    #             st.code(out, language="shell")
-
-    # if st.button("Run"):
-    #     for out in utils.run_command_with_output(
-    #         """
-    #         echo "Write file as user11, should return file: "; fname=$(mktemp | cut -d'/' -f3); sudo -u user11 touch /t1/user11/$fname; sudo -u user11 ls -l /t1/user11/$fname
-    #         echo "Write file as user12, should fail with permission error even for their own dir: "; fname=$(mktemp | cut -d'/' -f3); sudo -u user12 touch /t1/user12/$fname || echo "create /t1/user12/$fname failed"; sudo -u user12 ls -l $fname || echo "ls /t1/user12/$fname failed"
-    #         echo "file/dir ACLs are also respected, user11 write to user12 owned folder, should fail with permission error: "; fname=$(mktemp | cut -d'/' -f3); sudo -u user11 touch /t1/user12/$fname || echo "create /t1/user12/$fname failed for user11"
-    #         """
-    #     ):
-    #         st.code(out, language="shell")
+        if runas and cmd:
+            for out in utils.run_command_with_output(f"sudo -u {runas} {cmd}"):
+                st.code(out, language="shell")
 
     with st.expander("Code"):
         with st.expander("Create tenant users & volumes"):
@@ -364,8 +301,6 @@ def multi_tenancy():
                 """,
                 language="shell",
             )
-        # with st.expander("Multi-tenancy demo steps"):
-        #     st.code(inspect.getsource(multi_tenancy))
 
 
 def datamasking():
