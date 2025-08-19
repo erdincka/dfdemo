@@ -370,7 +370,7 @@ def remount_tenant():
             echo "{mount_point} mounted with {user} ticket!"
         """
         ):
-            st.code(out, language="shell")
+            logger.info(out)
 
     else:
-        st.info("No tenant selected!")
+        logger.info("No tenant selected!")

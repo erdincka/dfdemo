@@ -107,12 +107,20 @@ def main():
 
     # List S3 bucket content
     if st.session_state.get("bucket_content", None):
-        st.write(f"Bucket {st.session_state['selected_bucket']} objects:")
+        row = st.columns([5, 1], vertical_alignment="bottom")
+        row[0].write(f"Bucket {st.session_state['selected_bucket']} objects:")
+        row[1].button(
+            "", icon="🔄", on_click=utils.set_bucket_list, key="btn_bucket_list"
+        )
         st.table(st.session_state["bucket_content"])
 
     # List folder content
     if st.session_state.get("folder_content", None):
-        st.write(f"Folder {st.session_state['selected_folder']} content:")
+        row = st.columns([5, 1], vertical_alignment="bottom")
+        row[0].write(f"Folder {st.session_state['selected_folder']} content:")
+        row[1].button(
+            "", icon="🔄", on_click=utils.set_folder_list, key="btn_folder_list"
+        )
         st.table(st.session_state["folder_content"])
 
     # Enable AI chat

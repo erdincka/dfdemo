@@ -251,30 +251,30 @@ def multi_tenancy():
             "Run as", options=["user11", "user12", "user21"]
         )
 
+        # tempfilename = uuid4().hex[:8]
         cmd = line[1].segmented_control(
             "Command",
-            # default=None,
-            # index=None,
-            # placeholder="Select a command to run",
             options=[
                 "ls -la /t1",
                 "ls -la /t2",
                 "ls -la /t1/user11",
                 "ls -la /t1/user12",
-                "ls -la /t2/user21/",
+                "ls -la /t2/user21",
                 "cat /t1/user11/*",
                 "cat /t1/user12/*",
                 "cat /t2/user21/*",
-                f"touch /t1/user11/{uuid4().hex[:8]}",
-                f"touch /t1/user12/{uuid4().hex[:8]}",
-                f"touch /t2/user21/{uuid4().hex[:8]}",
+                "date >> /t1/user11/testfile.1",
+                "date >> /t1/user12/testfile.1",
+                "date >> /t2/user21/testfile.1",
             ],
         )
 
-        st.info(f"Running `sudo -u {runas} {cmd}`")
+        st.write(f"Running `sudo -u {runas} bash -c '{cmd}'`")
 
         if runas and cmd:
-            for out in utils.run_command_with_output(f"sudo -u {runas} {cmd}"):
+            for out in utils.run_command_with_output(
+                f"sudo -u {runas} bash -c '{cmd}'"
+            ):
                 st.code(out, language="shell")
 
     with st.expander("Code"):
@@ -290,14 +290,14 @@ def multi_tenancy():
                 echo user11:mapr | chpasswd
                 echo user12:mapr | chpasswd
                 echo user21:mapr | chpasswd
-                /opt/mapr/bin/maprcli acl set -type cluster -user root:fc mapr:fc user11:login user12:login user21:login
-
-                # Create volumes for multi-tenant demo
-                /opt/mapr/bin/maprcli volume create -name tenant1Vol -path /tenant1 -tenantuser user11
-                /opt/mapr/bin/maprcli volume create -name tenant2Vol -path /tenant2 -tenantuser user21
+                mkdir /t1
+                mkdir /t2
+                
+                # Create volumes and tenant tickets
+                /opt/mapr/bin/maprcli volume create -name tenant1Vol -path /tenant1 -tenantuser user11 -readAce 'g:tenant1' -writeAce 'u:user11' -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
+                /opt/mapr/bin/maprcli volume create -name tenant2Vol -path /tenant2 -tenantuser user21 -readAce 'g:tenant2' -writeAce 'u:user21' -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
                 echo mapr | maprlogin generateticket -type tenant -user user11 -out /home/mapr/tenant_user11_ticket.txt
                 echo mapr | maprlogin generateticket -type tenant -user user21 -out /home/mapr/tenant_user21_ticket.txt
-                chown mapr:mapr /home/mapr/tenant_user11_ticket.txt /home/mapr/tenant_user21_ticket.txt
                 """,
                 language="shell",
             )
@@ -424,10 +424,11 @@ DEMO_LIST = {
         "function": multi_tenancy,
         "title": "Tenant Isolation",
         "keywords": [
+            "tenant",
             "security",
-            "users",
+            "permission",
             "ACE",
-            "access control",
+            "access control expression",
         ],
         "flow": """
         Data Fabric is configured with 2 tenants, `tenant1` and `tenant2`
