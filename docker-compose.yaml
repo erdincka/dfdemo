@@ -1,7 +1,7 @@
 services:
   mapr:
     platform: linux/amd64
-    image: erdincka/mapr:0.1.6
+    image: mapr:0.1.7
     build:
       context: ./mapr
       dockerfile: Dockerfile
@@ -15,6 +15,7 @@ services:
       platforms:
         - "linux/amd64"
     container_name: mapr
+    hostname: mapr
     restart: unless-stopped
     environment:
       - clusterName=dfab.io
@@ -46,7 +47,7 @@ services:
 
   app:
     platform: linux/amd64
-    image: erdincka/app:0.1.9
+    image: app:0.1.9
     build:
       context: ./app
       dockerfile: Dockerfile
@@ -55,6 +56,7 @@ services:
       platforms:
         - "linux/amd64"
     container_name: app
+    hostname: app
     restart: unless-stopped
     depends_on:
       mapr:
@@ -77,6 +79,7 @@ services:
     platform: linux/amd64
     image: itsthenetwork/nfs-server-alpine:latest
     container_name: nfs
+    hostname: nfs
     restart: unless-stopped
     environment:
       - SHARED_DIRECTORY=/share
@@ -92,6 +95,7 @@ services:
     platform: linux/amd64
     image: mysql/mysql-server:8.0
     container_name: db
+    hostname: db
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: 'demodb'
@@ -106,6 +110,7 @@ services:
     platform: linux/amd64
     image: minio/minio:latest
     container_name: minio
+    hostname: minio
     restart: unless-stopped
     environment:
       - MINIO_ROOT_USER='admin'

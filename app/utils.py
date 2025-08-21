@@ -4,9 +4,11 @@ import socket
 from urllib.parse import urlparse
 from uuid import uuid4
 import httpx
+import mysql.connector
 import pandas as pd
 import streamlit as st
 from faker import Faker
+
 
 from config import logger
 import constants, s3, streams, restcalls
@@ -106,6 +108,12 @@ def parse_data(data):
 
 
 def get_public_hostname():
+    """
+    Return the public hostname of the current machine.
+
+    This function uses `streamlit_js_eval`, which is a widget command.
+    Therefore it must not be cached.
+    """
     from streamlit_js_eval import streamlit_js_eval
 
     # This returns the result of `window.location.origin` from browser
@@ -115,7 +123,7 @@ def get_public_hostname():
         logger.debug(f"Detected public URL: {result}")
         return urlparse(result).hostname
     else:
-        st.warning("Could not detect public URL yet.")
+        logger.warning("Could not detect public URL yet.")
         return ""
 
 
@@ -126,22 +134,92 @@ def sample_to_incoming():
             logger.info(f"Published {msg}")
 
 
-def sample_creditcards(count: int = 10):
+def sample_users(count: int = 10):
     res = []
     fake = Faker("en_GB")
     for _ in range(count):
-        newcc = {
+        new_user = {
             "_id": uuid4().hex,
             "name": fake.name(),
-            "creditcard": fake.credit_card_number(),
             "address": fake.address(),
             "mobile": fake.phone_number(),
             "ssn": fake.ssn(),
+            "creditcard": fake.credit_card_number(),
             "iban": fake.iban(),
         }
-        res.append(newcc)
+        res.append(new_user)
 
     return res
+
+
+@st.cache_data
+def get_users_from_url(count: int):
+    URL = f"https://randomuser.me/api/?results={count}&format=json&dl&noinfo"
+    res = httpx.get(URL)
+    res.raise_for_status()
+    users = res.json()
+    return users["results"] if "results" in users else []
+
+
+@st.cache_data
+def user_records_for_mysql(users: list):
+
+    sql = (
+        "INSERT INTO users (title, first, last, street, city, state, postcode, country, gender, "
+        "email, uuid, username, password, phone, cell, dob, registered, large, medium, thumbnail, nat) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    )
+
+    vals = []
+    for user in users:
+        # pprint(user)
+        vals.append(
+            (
+                user["name"]["title"],
+                user["name"]["first"],
+                user["name"]["last"],
+                str(user["location"]["street"]["number"])
+                + " "
+                + user["location"]["street"]["name"],
+                user["location"]["city"],
+                user["location"]["state"],
+                user["location"]["postcode"],
+                user["location"]["country"],
+                user["gender"],
+                user["email"],
+                user["login"]["uuid"],
+                user["login"]["username"],
+                user["login"]["password"],
+                user["phone"],
+                user["cell"],
+                user["dob"]["date"],
+                user["registered"]["date"],
+                # datetime.fromisoformat(user["dob"]["date"].replace('Z', '+00:00')).strftime('%Y-%m-%d %H:%M:%S'),
+                # datetime.fromisoformat(user["registered"]["date"].replace('Z', '+00:00')).strftime('%Y-%m-%d %H:%M:%S'),
+                user["picture"]["large"],
+                user["picture"]["medium"],
+                user["picture"]["thumbnail"],
+                user["nat"],
+            )
+        )
+
+    return (sql, vals)
+
+
+def get_mysql_connection():
+    try:
+        conn = mysql.connector.connect(
+            host="db",
+            user="mysql",
+            password="Admin123.",
+            database="demodb",
+            connection_timeout=5,
+        )
+        return conn
+    except mysql.connector.Error as err:
+        st.error(f"❌ MySQL connection failed: {err}")
+    except Exception as error:
+        st.error(f"Query error: {error}")
 
 
 # @st.dialog("Code", width='large')
@@ -228,6 +306,15 @@ def APPs(hostname: str):
                     "name": "NiFi",
                     "help": "NiFi",
                     "url": f"https://{hostname}:12443/nifi",
+                }
+            )
+
+        if is_port_open(3000):
+            res.append(
+                {
+                    "name": "Grafana",
+                    "help": "Grafana Dashboards",
+                    "url": f"https://{hostname}:3000",
                 }
             )
 
@@ -346,7 +433,7 @@ def file_content(path: str):
     with open(path, "r") as f:
         res = f.read()
 
-    return res
+    return res  # .encode("utf-8")
 
 
 def remount_tenant():

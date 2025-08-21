@@ -36,7 +36,8 @@ chown -R mapr:mapr /home/mapr/.aws/
 
 echo "[ $(date) ] Mounting /mapr"
 # Mount /mapr
-mount -t nfs -o nolock localhost:/mapr /mapr
+# mount -t nfs -o nolock localhost:/mapr /mapr
+# mount -t nfs -o vers=4,proto=tcp,nolock,sec=sys mapr:/mapr /mapr
 
 echo "[ $(date) ] Setting up mc for S3"
 # S3 alias for mc
@@ -72,8 +73,8 @@ mkdir /mapr/dfab.io/tenant1/user12; chown user12:tenant1 /mapr/dfab.io/tenant1/u
 mkdir /mapr/dfab.io/tenant2/user21; chown user21:tenant2 /mapr/dfab.io/tenant2/user21
 
 # Create Iceberg table on S3 bucket
-# /opt/mapr/spark/spark-3.5.5/bin/pyspark \
-#   --packages org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.9.2 < ./create_iceberg_table.py > /dev/null
+/opt/mapr/spark/spark-3.5.5/bin/pyspark \
+  --packages org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.9.2 < /home/mapr/create_iceberg_table.py > /dev/null
 
 echo "[ $(date) ] CREDENTIALS:"
 # echo "Hive Credentials: hive/Admin123."

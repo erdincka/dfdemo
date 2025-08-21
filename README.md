@@ -11,3 +11,6 @@
 - Open port :8501 on docker host (if running locally, it would be http://localhost:8501/)
 
 ! 20GB+ memory required for docker.
+
+
+Required to run on db: `GRANT REPLICATION SLAVE ON *.* TO 'mysql'@'%'`

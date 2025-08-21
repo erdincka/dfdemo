@@ -38,7 +38,7 @@ You can then open NiFi endpoint to enable/disable the flow, and use Drill to que
 - Open [NiFi](https://localhost:12443/nifi) to configure passwords and enable controllers
     - Login with `admin/Admin123.Admin123.` (or use your credentials if you've changed in the `docker-compose.yaml` file).
 
-    - Drag "Process Group" from top of the page onto Canvas, browse to upload the [flow file: CDC with HPE Data Fabric.json](./CDC%20with%20HPE%20Data%20Fabric.json).
+    - Drag "Process Group" from top of the page onto Canvas, browse to upload the [flow file: HPE Data Fabric Demo.json](./app/HPE_Data_Fabric_Demo.json).
 
         - Select the Process Group, and select [Settings](./images/NiFi_ControllerSettings.png) for "NiFi Flow".
     
@@ -61,12 +61,12 @@ You can then open NiFi endpoint to enable/disable the flow, and use Drill to que
 
     - It will take few seconds to reflect the process on UI, but you should see files immediately
     
-    - `ls /mapr/dffab.io/user/mapr/users/`
+    - `ls /mapr/dfab.io/user/mapr/users/`
 
 
 - (Optional) Query JSON files with Drill
 
-    `/opt/mapr/drill/drill-1.21.2/bin/sqlline -u 'jdbc:drill:drillbit=dffab.io:31010;auth=MAPRSASL'`
+    `/opt/mapr/drill/drill-1.21.2/bin/sqlline -u 'jdbc:drill:drillbit=dfab.io:31010;auth=MAPRSASL'`
 
     then Run
 

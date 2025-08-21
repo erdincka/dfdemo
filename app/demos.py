@@ -1,11 +1,12 @@
 import os
 from pathlib import Path
+from timeit import default_timer
 import streamlit as st
 import pandas as pd
 import json
 import inspect
 
-import mysql.connector
+from mysql.connector import MySQLConnection
 
 import fragments
 from config import logger
@@ -367,7 +368,7 @@ def datamasking():
             help="Add new json documents",
         ):
             try:
-                docs = utils.sample_creditcards(2)
+                docs = utils.sample_users(2)
                 st.write(f"#### Sending records to {table_name}")
                 st.table(docs)
                 st.write(restcalls.add_documents(table_name, docs))
@@ -385,59 +386,127 @@ def datamasking():
 def cdc():
     st.markdown(
         """
-        - Check MySQL connectivity
-        - Check MySQL settings to verify CDC is enabled
-        - Check MySQL table users is populated
-        - Check NiFi service running
-        - Check NiFi flow file is available - provide a link to download if so
-        - Check dashboard availability
-        - Provide button to update users table - create new users!
-        - Embed dashboard for realtime updates within st UI
+        #### TODO
+        - NiFi flow file automatically uploaded to NiFi using REST API
+        - Embed dashboard for realtime updates within app UI
     """
     )
 
     # --- New: Verify MySQL connection to 'demodb' on host 'db' ---
-    try:
-        conn = mysql.connector.connect(
-            host="db",
-            user="mysql",
-            password="Admin123.",
-            database="demodb",
-            connection_timeout=5,
-        )
-        if conn.is_connected():
-            st.success("✅ MySQL 'demodb' connection successful.")
-        # --------------------- Verify CDC settings --------------------------------
-        # cdc_settings = {}
-        # try:
-        #     cursor = conn.cursor()
-        #     # Check if binary logging is enabled
-        #     cursor.execute("SELECT @@global.log_bin;")
-        #     # cursor.execute("SHOW VARIABLES LIKE 'log_bin';")
-        #     cdc_settings["log_bin"] = cursor.fetchone()[0]
-        #     # Check binlog format (should be ROW for CDC)
-        #     cursor.execute("SELECT @@global.binlog_format;")
-        #     # cursor.execute("SHOW VARIABLES LIKE 'binlog_format';")
-        #     cdc_settings["binlog_format"] = cursor.fetchone()[0]
-        #     # Optional: check row image (FULL is safest)
-        #     cursor.execute("SELECT @@global.binlog_row_image;")
-        #     # cursor.execute("SHOW VARIABLES LIKE 'binlog_row_image';")
-        #     cdc_settings["binlog_row_image"] = cursor.fetchone()[0]
-        #     # Optional: check whether binary log file exists
-        #     cursor.execute("SHOW MASTER STATUS;")
-        #     master_status = cursor.fetchone()
-        #     cdc_settings["master_status"] = master_status
-        # except mysql.connector.Error as err:
-        #     st.error(f"❌ Failed to query CDC settings: {err}")
-        # else:
-        #     st.write("### CDC‑related MySQL settings")
-        #     st.table(cdc_settings)
-        # finally:
-        #     cursor.close()
+    conn: MySQLConnection = (
+        utils.get_mysql_connection()
+    )  # pyright: ignore[reportAssignmentType]
 
-        conn.close()
-    except mysql.connector.Error as err:
-        st.error(f"❌ MySQL connection failed: {err}")
+    line = st.columns(3)
+    if conn.is_connected():
+        line[0].write("DB connected: ✅")
+    else:
+        return
+
+    cursor = conn.cursor()
+    try:
+        # Check CDC
+        sql = """
+        SELECT @@global.log_bin;
+        SELECT @@global.binlog_format;
+        """
+        results = cursor.execute(sql, multi=True)
+        if results:
+            for i, cur in enumerate(results):
+                if cur.with_rows:
+                    rows = cur.fetchall()
+                    result = rows[0][0]
+                    if result:
+                        if i == 0:  # result of first select
+                            line[1].write("Binlog ✅")
+                        elif i == 1:  # result of second select
+                            line[2].write("CDC: ✅")
+    except Exception as error:
+        logger.error(error)
+        st.error(error)
+
+    row = st.columns([1, 5], vertical_alignment="bottom")
+    myinsert, myselect = row[0].columns(2)
+    if myinsert.button(
+        "",
+        icon=":material/add_circle_outline:",
+        help="Insert new users to the database",
+        key="mysql_insert",
+    ):
+        users = utils.get_users_from_url(5)
+        sql, vals = utils.user_records_for_mysql(users)
+        cursor.executemany(sql, vals)
+        conn.commit()
+        st.success(f"{cursor.rowcount} row(s) added.")
+
+    if myselect.button(
+        "",
+        icon=":material/refresh:",
+        help="Refresh users from database",
+        key="mysql_select",
+    ):
+        cursor.execute("SELECT * FROM users;")
+        rows = cursor.fetchall()
+        with st.expander(f"Fetched {cursor.rowcount} records from `users`"):
+            if cursor.description:
+                col_names = [desc[0] for desc in cursor.description]  # column headers
+                df = pd.DataFrame(rows, columns=col_names)
+                if "id" in col_names:
+                    df = df.set_index("id")
+                st.dataframe(df)
+
+    st.image("./images/CDC Demo.png", caption="Demo Flow", use_container_width=True)
+
+    st.download_button(
+        label="1. Download the flow file",
+        data=utils.file_content("/HPE_Data_Fabric_Demo.json"),
+        # file_name="cdc_flow.json",
+        mime="application/json",
+        icon=":material/download:",
+    )
+
+    hostname = os.environ["PUBLIC_HOSTNAME"]
+
+    nifi_url = f"https://{hostname}:12443/nifi"
+    st.link_button(
+        "Open NiFi",
+        url=nifi_url,
+        help=nifi_url,
+    )
+
+    st.write("Login with credentials: `admin`/`Admin123.Admin123.`")
+    st.write(
+        "Drag 'Process Group' icon from top of the page onto canvas, click on the browse icon to upload the flow file"
+    )
+    st.image("./images/NiFi_UploadFlow.png", caption="upload flow file")
+
+    st.write(
+        'Select the "Process Group", and select the `Configuration` icon for "HPE Data Fabric Demo"'
+    )
+    st.image(
+        "./images/NiFi_ControllerSettings.png",
+        caption="Update controller configuration",
+    )
+    st.write(
+        'In the "Controller Services" tab, enable all services by clicking the lightning icon and then selecting "Enable".'
+    )
+    st.image("./images/NiFi_ControllerServices.png", caption="Enable services")
+    st.write('Close the configuration window and double click to the "Process Group".')
+    st.write(
+        'Double-click on "CaptureChangeMySQL processor", go to "Properties" tab and enter `Admin123.` in the "Password" field. Click "Apply" to close.'
+    )
+    st.image("./images/NiFi_CaptureChangeMySQL.png", caption="Change MySQL Password")
+    st.image("./images/NiFi_MySQLPassword.png", caption="Set MySQL password")
+
+    st.write(
+        'Click on empty space on the canvas, and select "Play" button to start all processors.'
+    )
+
+    # st.link_button("Grafana", url=f"https://{hostname}:3000")
+    st.write("Open Grafana dashboard for detailed monitoring.")
+
+    cursor.close()
+    conn.close()
 
 
 def mesh():

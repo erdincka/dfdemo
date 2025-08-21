@@ -42,7 +42,8 @@ mkdir -p /root/.mc/certs/CAs; mkdir -p /home/mapr/.aws
 chown -R mapr:mapr /home/mapr/.aws/
 
 # Mount /mapr
-mount -t nfs -o nolock mapr:/mapr /mapr
+# mount -t nfs -o nolock mapr:/mapr /mapr
+# mount -t nfs -o vers=4,proto=tcp,nolock,sec=sys mapr:/mapr /mapr
 
 # S3 alias for mc
 access_key=$(grep accessKey /home/mapr/.aws/credentials | awk '{ print $3 }')
@@ -76,6 +77,8 @@ echo "Cluster Admin: mapr/mapr"
 echo "S3 Access Key: ${access_key}"
 echo "S3 Secret Key: ${secret_key}"
 
+# Run websocket server
+/app/.venv/bin/uvicorn ws_server:app --host 0.0.0.0 --port 8000 &&
 # Run app
 /app/.venv/bin/streamlit run main.py
 

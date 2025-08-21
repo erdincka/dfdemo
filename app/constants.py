@@ -1,7 +1,7 @@
 sources = [
     "File",
     "NASA API",
-    "Sales DB",
+    # "Sales DB",
     "Stream",
 ]
 
@@ -29,6 +29,7 @@ DEMO_STREAM = "/demovol/demostream"
 
 DEMO_FOLDERS = [
     "/",
+    "/user/mapr/users",
     "/demovol",
     "/tenant1",
     "/tenant1/user11",

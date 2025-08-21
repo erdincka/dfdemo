@@ -14,7 +14,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Replace dev repo
 RUN sed -i "s|http://dfaf.mip.storage.hpecorp.net/artifactory/list/prestage/releases|${MAPR_REPO}|g" /etc/apt/sources.list.d/mapr.list
 
-RUN apt update && apt -qq install -y git python3-dev gcc tree locales
+RUN apt update && apt install -y git python3-dev gcc tree locales
 
 ENV MAPR_HOME=/opt/mapr
 ENV SHELL=/bin/bash \
@@ -23,14 +23,17 @@ ENV SHELL=/bin/bash \
     LANGUAGE=en_US.UTF-8
 RUN locale-gen $LC_ALL
 
-RUN apt update && apt -qq upgrade -y && apt -qq install -y \
+RUN apt update && apt upgrade -y
+RUN apt remove -y mapr-nfs && apt install -y \
     mapr-nifi \
     mapr-drill \
     mapr-grafana \
+    mapr-collectd \
     mapr-opentsdb \
     mapr-airflow \
     mapr-spark \
     mapr-spark-thriftserver \
+    mapr-nfs4server \
     mysql-client
 
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
@@ -51,7 +54,9 @@ RUN dpkg -i "./mysql-connector-j_${MYSQL_CONNECTOR_VERSION}-1ubuntu${UBUNTU_VERS
 # Set up files/scripts
 COPY ./mysql.cnf /etc/mysql/conf.d/client.cnf
 COPY entrypoint.sh /
-COPY create_iceberg_table.py /
+COPY create_iceberg_table.py /home/mapr/
+COPY invoke-pyspark.sh /home/mapr/
+COPY ingest_to_iceberg.py /home/mapr/
 
 # Cleanup
 RUN rm "./mysql-connector-j_${MYSQL_CONNECTOR_VERSION}-1ubuntu${UBUNTU_VERSION}_all.deb"

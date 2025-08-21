@@ -1,4 +1,6 @@
+import asyncio
 import logging
+import os
 import streamlit as st
 import pandas as pd
 
@@ -7,14 +9,16 @@ logging.getLogger("watchdog.observers.inotify_buffer").setLevel(logging.WARNING)
 
 st.session_state.setdefault("logs", "")
 st.session_state.setdefault("source_dataframe", pd.DataFrame())
+st.session_state.setdefault("refresh_interval", 600)
 
 import s3, utils, demos, constants, restcalls
 from config import logger
 
 
-def sidebar():
+async def sidebar():
     # Session settings & vars
     hostname = utils.get_public_hostname()
+    os.environ["PUBLIC_HOSTNAME"] = hostname
     urls = utils.URLs(hostname)
     apps = utils.APPs(hostname)
 
@@ -70,6 +74,10 @@ def sidebar():
             #     f'Create DDM on creditcard: {restcalls.set_datamask(table_name, "creditcard", "mrddm_last4")}'
             # )
 
+    with sb.container():
+        restcalls.opentsdb_monitoring()
+        # await restcalls.topic_stats("/demovol/demostream", "incoming")
+
     sb.markdown(
         """
         Learn more about [HPE Data Fabric](https://docs.ezmeral.hpe.com/datafabric-customer-managed/710/MapROverview/c_overview_intro.html)
@@ -77,9 +85,9 @@ def sidebar():
     )
 
 
-def main():
+async def main():
     st.set_page_config(page_title="HPE Data Fabric Demo", layout="wide")
-    sidebar()
+    await sidebar()
 
     demo_list = list(demos.DEMO_LIST.keys())
 
@@ -133,4 +141,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
