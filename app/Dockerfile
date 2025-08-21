@@ -26,4 +26,4 @@ RUN echo mapr > /root/mapr_password
 
 ENTRYPOINT [ "/entrypoint.sh" ]
 
-HEALTHCHECK --interval=30s --timeout=30s --start-period=30s --retries=3 CMD curl -f http://localhost:8501/ || exit 1
+HEALTHCHECK --interval=30s --timeout=30s --start-period=30s --retries=10 CMD curl -f http://localhost:8501/ || exit 1

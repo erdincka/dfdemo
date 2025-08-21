@@ -77,8 +77,6 @@ echo "Cluster Admin: mapr/mapr"
 echo "S3 Access Key: ${access_key}"
 echo "S3 Secret Key: ${secret_key}"
 
-# Run websocket server
-/app/.venv/bin/uvicorn ws_server:app --host 0.0.0.0 --port 8000 &&
 # Run app
 /app/.venv/bin/streamlit run main.py
 

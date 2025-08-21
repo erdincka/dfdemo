@@ -24,7 +24,7 @@ ENV SHELL=/bin/bash \
 RUN locale-gen $LC_ALL
 
 RUN apt update && apt upgrade -y
-RUN apt remove -y mapr-nfs && apt install -y \
+RUN apt install -y \
     mapr-nifi \
     mapr-drill \
     mapr-grafana \
@@ -33,8 +33,8 @@ RUN apt remove -y mapr-nfs && apt install -y \
     mapr-airflow \
     mapr-spark \
     mapr-spark-thriftserver \
-    mapr-nfs4server \
     mysql-client
+# RUN apt remove -y mapr-nfs && apt install -y mapr-nfs4server
 
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
 
@@ -63,4 +63,4 @@ RUN rm "./mysql-connector-j_${MYSQL_CONNECTOR_VERSION}-1ubuntu${UBUNTU_VERSION}_
 
 ENTRYPOINT [ "/entrypoint.sh" ]
 
-HEALTHCHECK --interval=30s --timeout=30s --start-period=15m --start-interval=30s --retries=3 CMD [ -d /mapr/dfab.io/ ] || exit 1
+HEALTHCHECK --interval=30s --timeout=30s --start-period=15m --start-interval=30s --retries=10 CMD [ -d /mapr/dfab.io/ ] || exit 1

@@ -510,7 +510,9 @@ def cdc():
 
 
 def mesh():
-    # st.link_button("Mesh", "http://docker.kayalab.uk:3005/mesh/")
+    st.link_button("Mesh", f"http://{os.environ['PUBLIC_HOSTNAME']}:3005/mesh/")
+
+    st.write("If this is not working:")
     st.write("Use https://github.com/erdincka/catchx")
 
 

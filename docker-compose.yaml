@@ -1,7 +1,7 @@
 services:
   mapr:
     platform: linux/amd64
-    image: mapr:0.1.7
+    image: local/mapr:0.1.9
     build:
       context: ./mapr
       dockerfile: Dockerfile
@@ -47,7 +47,7 @@ services:
 
   app:
     platform: linux/amd64
-    image: app:0.1.9
+    image: local/app:0.1.10
     build:
       context: ./app
       dockerfile: Dockerfile
