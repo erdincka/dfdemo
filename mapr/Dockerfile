@@ -31,6 +31,7 @@ RUN apt install -y \
     mapr-collectd \
     mapr-opentsdb \
     mapr-airflow \
+    mapr-hue \
     mapr-spark \
     mapr-spark-thriftserver \
     mysql-client
@@ -38,7 +39,7 @@ RUN apt install -y \
 
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
 
-EXPOSE 8443 8501 2222 8047 8780 12443 3000 8780
+EXPOSE 8443 8501 2222 8047 8780 12443 3000 8780 8888
 
 # fix init-script
 RUN sed -i '/after cldb /a     sleep 30; echo mapr | maprlogin password -user mapr' /usr/bin/init-script

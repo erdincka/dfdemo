@@ -29,13 +29,14 @@ services:
       # Following password needs to be min 12 chars
       - NIFI_PASSWORD=Admin123.Admin123.
     ports:
-      # - "8501:8501"  ## required if there is an app UI
+      # - "8501:8501"  ## if there is an app UI
       # - "9443:9443"  ## optional for Installer UI
       - "8443:8443"  ## optional for MCS
-      - "2222:22"  ## optional for SSH
+      # - "2222:22"  ## optional for SSH
       - "12443:12443" ## optional for NiFi
       - "8047:8047" ## optional for Drill
       - "8780:8780" ## optional for Airflow
+      - "8888:8888" ## optional for Hue
       - "3000:3000" ## optional for Grafana
     privileged: true
     cap_add:
