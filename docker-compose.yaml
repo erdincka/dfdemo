@@ -1,7 +1,7 @@
 services:
   mapr:
     platform: linux/amd64
-    image: local/mapr:0.1.9
+    image: local/mapr:0.1.12
     build:
       context: ./mapr
       dockerfile: Dockerfile
@@ -78,21 +78,21 @@ services:
       # - ./wgetrc:/root/.wgetrc:ro
       # - ./mysql.cnf:/etc/mysql/conf.d/client.cnf
 
-  nfs:
-    platform: linux/amd64
-    image: itsthenetwork/nfs-server-alpine:latest
-    container_name: nfs
-    hostname: nfs
-    restart: unless-stopped
-    environment:
-      - SHARED_DIRECTORY=/share
-    ports: []
-      # - "2049:2049" # conflict with the host?
-    privileged: true
-    volumes:
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
-      - nfs-data:/share:rw
+  # nfs:
+  #   platform: linux/amd64
+  #   image: itsthenetwork/nfs-server-alpine:latest
+  #   container_name: nfs
+  #   hostname: nfs
+  #   restart: unless-stopped
+  #   environment:
+  #     - SHARED_DIRECTORY=/share
+  #   ports: []
+  #     # - "2049:2049" # conflict with the host?
+  #   privileged: true
+  #   volumes:
+  #     - /etc/timezone:/etc/timezone:ro
+  #     - /etc/localtime:/etc/localtime:ro
+  #     - nfs-data:/share:rw
 
   db:
     platform: linux/amd64
@@ -109,22 +109,22 @@ services:
       - mysql:/var/lib/mysql
       - ./mysqld.cnf:/etc/mysql/conf.d/mysqld.cnf
 
-  minio:
-    platform: linux/amd64
-    image: minio/minio:latest
-    container_name: minio
-    hostname: minio
-    restart: unless-stopped
-    environment:
-      - MINIO_ROOT_USER='admin'
-      - MINIO_ROOT_PASSWORD='Admin123.'
-    # ports:
-    #   - "9000:9000"
-    volumes:
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
-      - minio-data:/data
-    command: server /data
+  # minio:
+  #   platform: linux/amd64
+  #   image: minio/minio:latest
+  #   container_name: minio
+  #   hostname: minio
+  #   restart: unless-stopped
+  #   environment:
+  #     - MINIO_ROOT_USER='admin'
+  #     - MINIO_ROOT_PASSWORD='Admin123.'
+  #   # ports:
+  #   #   - "9000:9000"
+  #   volumes:
+  #     - /etc/timezone:/etc/timezone:ro
+  #     - /etc/localtime:/etc/localtime:ro
+  #     - minio-data:/data
+  #   command: server /data
 
 volumes:
   mysql: {}

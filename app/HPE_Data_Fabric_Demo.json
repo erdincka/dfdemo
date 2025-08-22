@@ -53,7 +53,7 @@
                     "Multipart Threshold": "5 GB",
                     "s3-object-tags-prefix": null,
                     "SSL Context Service": null,
-                    "Bucket": "demobk",
+                    "Bucket": "demobucket",
                     "Multipart Upload AgeOff Interval": "60 min",
                     "use-path-style-access": "false",
                     "Write Permission User List": "${s3.permissions.write.users}",

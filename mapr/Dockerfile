@@ -27,14 +27,14 @@ RUN apt update && apt upgrade -y
 RUN apt install -y \
     mapr-nifi \
     mapr-drill \
-    mapr-grafana \
-    mapr-collectd \
-    mapr-opentsdb \
-    mapr-airflow \
-    mapr-hue \
     mapr-spark \
     mapr-spark-thriftserver \
     mysql-client
+# mapr-collectd \
+# mapr-airflow \
+# mapr-grafana \
+# mapr-opentsdb \
+# mapr-hue \
 # RUN apt remove -y mapr-nfs && apt install -y mapr-nfs4server
 
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
@@ -42,7 +42,7 @@ ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
 EXPOSE 8443 8501 2222 8047 8780 12443 3000 8780 8888
 
 # fix init-script
-RUN sed -i '/after cldb /a     sleep 30; echo mapr | maprlogin password -user mapr' /usr/bin/init-script
+RUN sed -i '/after cldb /a \tsleep 60 && (echo mapr | maprlogin password -user mapr)' /usr/bin/init-script
 
 # Add CDC support to NiFi
 RUN wget -P /opt/mapr/nifi/nifi-"${NIFI_VERSION}"/extensions https://repo1.maven.org/maven2/org/apache/nifi/nifi-cdc-mysql-nar/"${NIFI_VERSION}"/nifi-cdc-mysql-nar-"${NIFI_VERSION}".nar

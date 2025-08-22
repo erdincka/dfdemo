@@ -9,7 +9,7 @@ aws_endpoint = "https://127.0.0.1:9000"
 aws_access_key = config["default"]["aws_access_key_id"]
 aws_secret_key = config["default"]["aws_secret_access_key"]
 
-iceberg_warehouse = "s3a://demobk/iceberg/"
+iceberg_warehouse = "s3a://demobucket/iceberg/"
 iceberg_table = "demo.users"
 
 # Create Spark session with Iceberg and S3 support

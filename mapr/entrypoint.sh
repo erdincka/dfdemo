@@ -35,19 +35,17 @@ secretKey = ${secret_key}
 chown -R mapr:mapr /home/mapr/.aws/
 
 echo "[ $(date) ] Mounting /mapr"
-# /sbin/rpc.statd
-# Mount /mapr
 mount -t nfs -o nolock localhost:/mapr /mapr
+# /sbin/rpc.statd
 # mount -t nfs -o vers=4,proto=tcp,nolock,sec=sys mapr:/mapr /mapr
 
-echo "[ $(date) ] Setting up mc for S3"
-# S3 alias for mc
+echo "[ $(date) ] Setting up mc alias for S3"
 /opt/mapr/bin/mc alias set df https://dfab.io:9000 $access_key $secret_key
 
 echo "[ $(date) ] Creating demo volume, bucket, and stream"
 maprcli volume create -name demovol -path /demovol -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
 maprcli stream create -path /demovol/demostream -ttl 86400 -produceperm p -consumeperm p -topicperm p
-/opt/mapr/bin/mc mb df/demobk
+/opt/mapr/bin/mc mb df/demobucket
 
 # Create users for multi-tenant demo
 getent group tenant1 || groupadd -g 10000 tenant1
@@ -61,7 +59,6 @@ echo user21:mapr | chpasswd
 # Allow users access to system (login)
 /opt/mapr/bin/maprcli acl set -type cluster -user root:fc mapr:fc user11:login user12:login user21:login
 # /opt/mapr/bin/maprcli acl set -type volume -name tenant1Vol -user mapr:fc user11:fc user12:m
-
 
 # Create volumes for multi-tenant demo
 /opt/mapr/bin/maprcli volume create -name tenant1Vol -path /tenant1 -tenantuser user11 -readAce 'g:tenant1' -writeAce 'u:user11' -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 

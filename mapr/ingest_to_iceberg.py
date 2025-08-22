@@ -10,9 +10,9 @@ aws_access_key = config["default"]["aws_access_key_id"]
 aws_secret_key = config["default"]["aws_secret_access_key"]
 
 # Define S3 and Iceberg paths
-staging_path = "s3a://demobk/*.parquet"
+staging_path = "s3a://demobucket/*.parquet"
 iceberg_table = "demo.users"
-iceberg_warehouse = "s3a://demobk/iceberg/"
+iceberg_warehouse = "s3a://demobucket/iceberg/"
 
 # Create Spark session with Iceberg and S3 support
 spark = (
