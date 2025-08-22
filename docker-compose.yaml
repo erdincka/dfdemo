@@ -43,6 +43,7 @@ services:
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
+      # - ./wgetrc:/root/.wgetrc:ro
       # - ./mysql.cnf:/etc/mysql/conf.d/client.cnf
 
   app:
@@ -73,6 +74,7 @@ services:
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
+      # - ./wgetrc:/root/.wgetrc:ro
       # - ./mysql.cnf:/etc/mysql/conf.d/client.cnf
 
   nfs:
