@@ -1,7 +1,7 @@
 services:
   mapr:
     platform: linux/amd64
-    image: local/mapr:0.1.12
+    image: local/mapr:0.1.13
     build:
       context: ./mapr
       dockerfile: Dockerfile

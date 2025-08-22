@@ -42,7 +42,7 @@ ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
 EXPOSE 8443 8501 2222 8047 8780 12443 3000 8780 8888
 
 # fix init-script
-RUN sed -i '/after cldb /a \tsleep 60 && (echo mapr | maprlogin password -user mapr)' /usr/bin/init-script
+RUN sed -i '/after cldb /a while [[ ! -f /tmp/maprticket_0 ]]; do (echo mapr | maprlogin password -user mapr); sleep 1; done' /usr/bin/init-script
 
 # Add CDC support to NiFi
 RUN wget -P /opt/mapr/nifi/nifi-"${NIFI_VERSION}"/extensions https://repo1.maven.org/maven2/org/apache/nifi/nifi-cdc-mysql-nar/"${NIFI_VERSION}"/nifi-cdc-mysql-nar-"${NIFI_VERSION}".nar
