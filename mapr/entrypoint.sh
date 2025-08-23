@@ -35,8 +35,8 @@ secretKey = ${secret_key}
 chown -R mapr:mapr /home/mapr/.aws/
 
 echo "[ $(date) ] Mounting /mapr"
-mount -t nfs -o nolock localhost:/mapr /mapr
 # /sbin/rpc.statd
+mount -t nfs -o nolock localhost:/mapr /mapr
 # mount -t nfs -o vers=4,proto=tcp,nolock,sec=sys mapr:/mapr /mapr
 
 echo "[ $(date) ] Setting up mc alias for S3"

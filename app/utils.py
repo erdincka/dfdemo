@@ -359,14 +359,14 @@ def set_table_content(runas: str = ""):
 def get_folder_list(folder: str):
     """
     Return a list of dictionaries that mirror the information you see with
-    ``ls -l`` – permissions, link‑count, owner, group, size, modification
+    ``ls -l`` - permissions, link-count, owner, group, size, modification
     time, name and, for symlinks, the target string.
 
     This uses ``Path.lstat`` (so we never follow a symlink) and the
     :mod:`stat` helpers to format the mode string in the same way as
     ``ls`` prints it.  Any exception for a particular entry is logged
-    and that entry is simply skipped – this keeps the function robust
-    when it encounters non‑regular files such as device nodes or
+    and that entry is simply skipped - this keeps the function robust
+    when it encounters non-regular files such as device nodes or
     special MapR links.
     """
     import os
@@ -382,8 +382,8 @@ def get_folder_list(folder: str):
 
     base_path = Path(f"/mapr/dfab.io/{folder}")
 
-    for entry in base_path.iterdir():
-        try:
+    try:
+        for entry in base_path.iterdir():
             lstat = entry.lstat()  # do NOT follow symlinks
             mode_str = stat.filemode(lstat.st_mode)
 
@@ -416,9 +416,10 @@ def get_folder_list(folder: str):
                     "target": target,
                 }
             )
-        except Exception as e:
-            # If we can't stat a file we log and skip it
-            logger.warning(f"Skipping {entry} – {e}")
+    except Exception as e:
+        # If we can't stat a file we log and skip it
+        logger.error(e)
+        st.error(e)
 
     return content
 

@@ -42,7 +42,7 @@ mkdir -p /root/.mc/certs/CAs; mkdir -p /home/mapr/.aws
 chown -R mapr:mapr /home/mapr/.aws/
 
 # Mount /mapr
-# mount -t nfs -o nolock mapr:/mapr /mapr
+mount -t nfs -o nolock mapr:/mapr /mapr
 # mount -t nfs -o vers=4,proto=tcp,nolock,sec=sys mapr:/mapr /mapr
 
 # S3 alias for mc

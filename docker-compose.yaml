@@ -1,13 +1,13 @@
 services:
   mapr:
     platform: linux/amd64
-    image: local/mapr:0.1.13
+    image: local/mapr:0.1.15
     build:
       context: ./mapr
       dockerfile: Dockerfile
       args:
         # - MAPR_REPO=https://package.ezmeral.hpe.com/releases/
-        - MAPR_REPO=http://10.1.1.4/mapr/ # this is my local repo, default is the line above
+        - MAPR_REPO=http://repo.kayalab.uk/mapr/ # this is my local repo, default is the line above
         # Don't change these unless you are using a newer sandbox image
         - UBUNTU_VERSION=22.04
         - NIFI_VERSION=1.28.0
@@ -49,12 +49,12 @@ services:
 
   app:
     platform: linux/amd64
-    image: local/app:0.1.10
+    image: local/app:0.1.11
     build:
       context: ./app
       dockerfile: Dockerfile
       args:
-        - MAPR_REPO=http://10.1.1.4/mapr/ # this is my local repo, delete for default
+        - MAPR_REPO=http://repo.kayalab.uk/mapr/ # this is my local repo, delete for default
       platforms:
         - "linux/amd64"
     container_name: app

@@ -27,14 +27,14 @@ RUN apt update && apt upgrade -y
 RUN apt install -y \
     mapr-nifi \
     mapr-drill \
+    mapr-collectd \
+    mapr-opentsdb \
     mapr-spark \
     mapr-spark-thriftserver \
     mysql-client
-# mapr-collectd \
 # mapr-airflow \
-# mapr-grafana \
-# mapr-opentsdb \
 # mapr-hue \
+# mapr-grafana \
 # RUN apt remove -y mapr-nfs && apt install -y mapr-nfs4server
 
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
