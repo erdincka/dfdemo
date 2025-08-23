@@ -27,13 +27,14 @@ RUN apt update && apt upgrade -y
 RUN apt install -y \
     mapr-nifi \
     mapr-drill \
-    mapr-collectd \
-    mapr-opentsdb \
     mapr-spark \
     mapr-spark-thriftserver \
     mysql-client
-# mapr-airflow \
+
 # mapr-hue \
+# mapr-airflow \
+# mapr-collectd \
+# mapr-opentsdb \
 # mapr-grafana \
 # RUN apt remove -y mapr-nfs && apt install -y mapr-nfs4server
 
