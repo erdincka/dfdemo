@@ -6,7 +6,7 @@ LABEL org.opencontainers.image.authors="erdincka@msn.com"
 
 EXPOSE 8501
 
-RUN apt install -y -o Dpkg::Options::="--force-confold" ca-certificates mysql-client
+RUN apt install -y -o Dpkg::Options::="--force-confold" ca-certificates mysql-client sudo
 
 COPY pyproject.toml uv.lock .python-version /app/
 COPY . /app/

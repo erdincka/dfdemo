@@ -49,7 +49,7 @@ services:
 
   app:
     platform: linux/amd64
-    image: local/app:0.1.11
+    image: local/app:0.1.12
     build:
       context: ./app
       dockerfile: Dockerfile
