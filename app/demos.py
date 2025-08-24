@@ -24,9 +24,9 @@ def inout():
     ):
         utils.sample_to_incoming()
 
-    cols = st.columns(2, border=True)
+    source = st.columns(1, border=True)
     # Source selection
-    with cols[0]:
+    with source[0]:
         st.subheader("Source", help="Multi-format data ingestion", divider=True)
         source = st.segmented_control(
             "Source", key="source", options=constants.sources, label_visibility="hidden"
@@ -84,10 +84,28 @@ def inout():
 
     input_record_count = len(st.session_state["source_dataframe"])
 
+    # Show source data
+    if input_record_count:
+        with st.expander(f"Source with {input_record_count} records."):
+            st.dataframe(st.session_state.source_dataframe, height=200)
+
+    # Data Transformation
+    etl = st.columns(1, border=True)
+    with etl[0]:
+        st.subheader(
+            "ETL Processing",
+            help="Apply transformation on the incoming data",
+            divider=True,
+        )
+        if len(st.session_state.source_dataframe):
+            fragments.data_transformation()
+            fragments.show_refined_data()
+
     # Destination selection
-    with cols[1]:
+    destination = st.columns(1, border=True)
+    with destination[0]:
+        st.subheader("Destination", help="Multi-format data storage", divider=True)
         if input_record_count:
-            st.subheader("Destination", help="Multi-format data storage", divider=True)
             st.segmented_control(
                 "Target",
                 options=constants.targets,
@@ -123,95 +141,77 @@ def inout():
                 help="Select or create a new bucket",
             )
 
-    # Show source data
-    if input_record_count:
-        with st.expander(f"Source with {input_record_count} records."):
-            st.dataframe(st.session_state.source_dataframe, height=200)
+        if st.session_state.get("target", "") == "s3":
 
-    # Data Transformation
-    st.write("Apply transformation (ie, ETL processing) on the incoming data")
-    if len(st.session_state.source_dataframe):
-        with st.expander("Data Transformation"):
-            fragments.data_transformation()
-            fragments.show_refined_data()
-
-    # Save to destination
-    if st.session_state.get("target", "") == "s3":
-        if (
-            st.session_state.save_to_bucket
-            and st.session_state.format
-            and st.session_state.destination_name
-        ):
-            df = (
-                st.session_state.refined_data
-                if len(st.session_state.refined_data)
-                else st.session_state["source_dataframe"]
-            )
-            # Determine content type based on format
-            content_type = "text/csv"
-            if st.session_state.get("format", None) == "json":
-                content_type = "application/json"
-            elif st.session_state.get("format", None) == "parquet":
-                content_type = "application/octet-stream"
-
-            if st.button("Put", type="primary"):
-                filename = f"{st.session_state.destination_name}.{'csv' if content_type == 'text/csv' else 'json' if content_type == 'application/json' else 'parquet'}"
-                if s3.put(
-                    df=df,
-                    bucket_name=st.session_state.save_to_bucket,
-                    file_key=filename,
-                    content_type=content_type,
-                ):
-                    st.success(
-                        f"{filename} uploaded to bucket {st.session_state.save_to_bucket}"
-                    )
-
-    elif st.session_state.get("target", "") == "posix":
-        # line = st.columns(2, vertical_alignment="bottom")
-        # destination = line[0].selectbox(
-        #     "Folder",
-        #     options=[f["name"] for f in utils.get_folder_list("/demovol")],
-        #     index=None,
-        #     accept_new_options=True,
-        # )
-        if (
-            # destination
-            st.session_state["format"]
-            and st.session_state["destination_name"]
-            and st.button(
-                "Save", help="Save to folder", key="btn_save_to_folder", type="primary"
-            )
-        ):
-            # os.makedirs(f"/mapr/dfab.io/demovol/{destination}", exist_ok=True)
-
-            filename = (
-                f"{st.session_state.destination_name}.{st.session_state['format']}"
-            )
-            try:
+            if (
+                st.session_state.save_to_bucket
+                and st.session_state.format
+                and st.session_state.destination_name
+            ):
                 df = (
                     st.session_state.refined_data
                     if len(st.session_state.refined_data)
                     else st.session_state["source_dataframe"]
                 )
-                # Create the full path for saving
-                save_path = Path(f"/mapr/dfab.io/demovol/{filename}")
-                # Ensure directory exists
-                # save_path.parent.mkdir(parents=True, exist_ok=True)
-                # Save based on format
-                logger.info(st.session_state["format"])
-                if st.session_state["format"] == "csv":
-                    df.to_csv(save_path.with_suffix(".csv"), index=False)
-                    st.success(f"Data saved as {save_path.with_suffix('.csv')}")
-                elif st.session_state["format"] == "json":
-                    df.to_json(save_path.with_suffix(".json"), orient="records")
-                    st.success(f"Data saved as {save_path.with_suffix('.json')}")
-                elif st.session_state["format"] == "parquet":
-                    df.to_parquet(save_path.with_suffix(".parquet"), index=False)
-                    st.success(f"Data saved as {save_path.with_suffix('.parquet')}")
+                # Determine content type based on format
+                content_type = "text/csv"
+                if st.session_state.get("format", None) == "json":
+                    content_type = "application/json"
+                elif st.session_state.get("format", None) == "parquet":
+                    content_type = "application/octet-stream"
 
-            except Exception as e:
-                st.error(f"Error saving file: {str(e)}")
-                logger.error(e)
+                filename = f"{st.session_state.destination_name}.{'csv' if content_type == 'text/csv' else 'json' if content_type == 'application/json' else 'parquet'}"
+
+                if st.button(
+                    f"Put {filename} in {st.session_state.save_to_bucket}",
+                    type="primary",
+                ):
+                    if s3.put(
+                        df=df,
+                        bucket_name=st.session_state.save_to_bucket,
+                        file_key=filename,
+                        content_type=content_type,
+                    ):
+                        st.success(
+                            f"{filename} uploaded to bucket {st.session_state.save_to_bucket}"
+                        )
+
+        elif st.session_state.get("target", "") == "posix":
+            filename = (
+                f"{st.session_state.destination_name}.{st.session_state['format']}"
+            )
+            if (
+                st.session_state["format"]
+                and st.session_state["destination_name"]
+                and st.button(
+                    f"Save to {filename}",
+                    help="Save to folder",
+                    key="btn_save_to_folder",
+                    type="primary",
+                )
+            ):
+                try:
+                    df = (
+                        st.session_state.refined_data
+                        if len(st.session_state.refined_data)
+                        else st.session_state["source_dataframe"]
+                    )
+                    # Create the full path for saving
+                    save_path = Path(f"/mapr/dfab.io/demovol/{filename}")
+                    logger.info(st.session_state["format"])
+                    if st.session_state["format"] == "csv":
+                        df.to_csv(save_path.with_suffix(".csv"), index=False)
+                        st.success(f"Data saved as {save_path.with_suffix('.csv')}")
+                    elif st.session_state["format"] == "json":
+                        df.to_json(save_path.with_suffix(".json"), orient="records")
+                        st.success(f"Data saved as {save_path.with_suffix('.json')}")
+                    elif st.session_state["format"] == "parquet":
+                        df.to_parquet(save_path.with_suffix(".parquet"), index=False)
+                        st.success(f"Data saved as {save_path.with_suffix('.parquet')}")
+
+                except Exception as e:
+                    st.error(f"Error saving file: {str(e)}")
+                    logger.error(e)
 
     # Code viewers
     with st.expander("Code"):
@@ -516,14 +516,13 @@ def mesh():
 
 
 DEMO_LIST = {
-    "⛲ Read & Write": {
+    "⛲ Multi-Modal": {
         "function": inout,
-        "title": "Data ingestion and multi-format data storage",
+        "title": "ETL for multi-modal data",
         "keywords": [
             "ingestion",
             "kafka",
             "stream",
-            "DB",
             "json",
             "parquet",
             "s3",
@@ -538,7 +537,7 @@ DEMO_LIST = {
         > Open logs to see messages.
         """,
     },
-    "👥 Multi-Tenancy": {
+    "👥 Multi-Tenant": {
         "function": multi_tenancy,
         "title": "Tenant Isolation",
         "keywords": [
@@ -564,7 +563,7 @@ DEMO_LIST = {
 
         """,
     },
-    "🛰️ CDC": {
+    "🛰️ Realtime": {
         "function": cdc,
         "title": "Capture Data Changes in Real-time",
         "flow": f"""

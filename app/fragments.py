@@ -1,9 +1,6 @@
-from datetime import datetime
-from time import sleep
 import pandas as pd
 import streamlit as st
 
-import restcalls
 from utils import not_implemented
 
 
@@ -16,7 +13,7 @@ def data_transformation():
             "Index",
             options=keys,
             index=None,
-            placeholder="Select column for index",
+            help="Assign column as index",
             key="index_column",
         )
         st.write(f"Index: {st.session_state.index_column}")
@@ -24,7 +21,7 @@ def data_transformation():
         st.multiselect(
             "Remove",
             [k for k in keys if k != st.session_state.index_column],
-            placeholder="Columns to remove",
+            help="Discard column in the output",
             key="remove_columns",
         )
         st.write(f"Remove: {st.session_state.remove_columns}")
@@ -38,7 +35,7 @@ def data_transformation():
                 and k != st.session_state.index_column
             ],
             index=None,
-            placeholder="Column to mask",
+            help="Column to mask",
             key="mask_column",
         )
         st.write(f"Mask: {st.session_state.mask_column}")
@@ -52,7 +49,7 @@ def data_transformation():
                 and k != st.session_state.index_column
             ],
             index=None,
-            placeholder="Apply category using AI",
+            help="Apply category using AI (mocked)",
             key="label_column",
         )
         st.write(f"Label: {st.session_state.label_column}")
@@ -61,7 +58,7 @@ def data_transformation():
         if st.button(
             "Apply",
             help="Creates in-memory copy of the input dataset with selected transformation. Output will be written with these ETL processing applied.",
-            icon=":material/rocket:",
+            type="primary",
         ):
             st.rerun()
 
@@ -82,6 +79,6 @@ def show_refined_data():
         )
     if st.session_state.label_column:
         df["category_type"] = df[st.session_state.label_column].apply(not_implemented)
-    st.dataframe(df, height=300)
+    st.dataframe(df, height=200)
     # st.code(df.head())
     st.session_state["refined_data"] = df

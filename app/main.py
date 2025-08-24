@@ -26,21 +26,13 @@ async def sidebar():
     sb.toggle("Enable AI Model", key="use_ai")
 
     # List URLs
-    sb.write("Services:")
+    sb.write("Services")
     cols = sb.columns(3)
     for idx, lnk in enumerate(urls + apps):
         col = cols[idx % 3]
         col.link_button(
             lnk["name"], lnk["url"], help=lnk["url"], use_container_width=True
         )
-
-    sb.selectbox(
-        "Buckets",
-        options=s3.list_buckets(),
-        on_change=utils.set_bucket_list,
-        key="selected_bucket",
-        index=None,
-    )
 
     sb.selectbox(
         "Folders",
@@ -50,23 +42,30 @@ async def sidebar():
         index=None,
     )
 
-    links_in_demovol = [
+    sb.selectbox(
+        "Buckets",
+        options=s3.list_buckets(),
+        on_change=utils.set_bucket_list,
+        key="selected_bucket",
+        index=None,
+    )
+
+    find_tables = [
         n["name"]
         for n in utils.get_folder_list("/demovol")
         if n["target"].startswith("mapr::table::")
     ]
-
-    logger.debug(links_in_demovol)
+    logger.debug(find_tables)
     table_name = sb.selectbox(
         "Tables",
-        options=links_in_demovol,
+        options=find_tables,
         on_change=utils.set_table_content,
         key="selected_table",
         index=None,
         accept_new_options=True,
     )
 
-    if table_name and table_name not in links_in_demovol:
+    if table_name and table_name not in find_tables:
         if sb.button(f"Create table '{table_name}'"):
             sb.write(f"Create table: {restcalls.create_table(table_name)}")
             # sb.write(f"Create column family: {restcalls.create_cf(table_name)}")
@@ -75,8 +74,10 @@ async def sidebar():
             # )
 
     with sb.container():
+        enable_refresh = st.toggle("Monitoring 📊")
+        if enable_refresh:
+            st.write("TODO!")
         # restcalls.opentsdb_monitoring()
-        restcalls.monitoring()
         # await restcalls.topic_stats("/demovol/demostream", "incoming")
 
     sb.markdown(

@@ -138,12 +138,6 @@ def add_documents(table_path: str, docs: list):
         raise error
 
 
-def monitoring():
-    enable_refresh = st.toggle("📊 Enable Monitoring")
-    if enable_refresh:
-        st.write("TODO!")
-
-
 # ### Monitoring / OpenTSDB
 # # --- Config ---
 # OPENTSDB_URL = "http://mapr:4242"
