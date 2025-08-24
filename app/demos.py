@@ -198,7 +198,7 @@ def inout():
                     )
                     # Create the full path for saving
                     save_path = Path(f"/mapr/dfab.io/demovol/{filename}")
-                    logger.info(st.session_state["format"])
+                    logger.debug(st.session_state["format"])
                     if st.session_state["format"] == "csv":
                         df.to_csv(save_path.with_suffix(".csv"), index=False)
                         st.success(f"Data saved as {save_path.with_suffix('.csv')}")
@@ -318,14 +318,26 @@ def datamasking():
 
     if table_name:
 
+        if st.button(
+            "Insert sample record(s) into the table",
+            help="Add new json document(s)",
+            # type="primary",
+        ):
+            try:
+                count = 1
+                docs = utils.sample_users(count)
+                st.write(f"#### Sending {count} record(s) to {table_name}")
+                st.table(docs)
+                st.write(restcalls.add_documents(table_name, docs))
+            except Exception as error:
+                st.error(error)
+
         # Show/set masks on table
         st.write(f"### Masks on {table_name}:")
         st.table(restcalls.get_datamasks(table_name=table_name))
         # Set DDM
-        masks, fields, _, actions = st.columns(
-            [3, 3, 4, 2], vertical_alignment="bottom"
-        )
-        action1, action2 = actions.columns(2, vertical_alignment="bottom")
+        masks, fields, _, action = st.columns([3, 3, 4, 2], vertical_alignment="bottom")
+        action1, action2 = action.columns(2, vertical_alignment="bottom")
         if action2.button("🔎", key="seeDDMtypes", help="Show DDM predefined types"):
             utils.show_ddm_types()
 
@@ -349,8 +361,7 @@ def datamasking():
             restcalls.set_datamask(table_name, selected_field, selected_mask)
 
         # List table content
-        read_as_command, _, actions = st.columns([3, 7, 2], vertical_alignment="bottom")
-        action1, action2 = actions.columns(2, vertical_alignment="bottom")
+        read_as_command, _, action = st.columns([3, 8, 1], vertical_alignment="bottom")
 
         runas_user = read_as_command.segmented_control(
             "Read table as",
@@ -359,20 +370,8 @@ def datamasking():
         if runas_user:
             utils.set_table_content(runas=runas_user if runas_user else "")
 
-        if action1.button("🔄", help="Refresh"):
+        if action.button("🔄", help="Refresh"):
             utils.set_table_content(runas=runas_user if runas_user else "")
-        if action2.button(
-            # ":material/queue:",
-            "🆕",
-            help="Add new json documents",
-        ):
-            try:
-                docs = utils.sample_users(2)
-                st.write(f"#### Sending records to {table_name}")
-                st.table(docs)
-                st.write(restcalls.add_documents(table_name, docs))
-            except Exception as error:
-                st.error(error)
 
         if st.session_state.get("table_content", None):
             st.write(f"### Records in {st.session_state['selected_table']}:")
