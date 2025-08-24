@@ -41,3 +41,12 @@
     user = YOUR_HPE_PASSPORT_EMAIL
     password = HPE_PASSPORT_TOKEN
     ```
+
+
+## TODO
+
+[] Complete GNS workflow
+
+[] Migrate Mesh Demo
+
+[] Migrate demos in `https://github.com/mapr-demos`

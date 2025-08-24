@@ -514,6 +514,34 @@ def mesh():
     st.write("Use https://github.com/erdincka/catchx")
 
 
+def gns():
+    st.write(
+        "*Ability to attach to external data sources, and making them part of the global namespace, so users and apps can access/manipulate the data on these sources without knowing their original location.*"
+    )
+
+    st.write("Looking at the global mount point - */mapr* ")
+
+    with st.echo():
+        for out in utils.run_command_with_output("ls -la /mapr"):
+            st.code(out)
+
+    if st.button(
+        "Mount NFSv4 volume",
+        key="btn_nfs_mount",
+        help="GNS facilitates access to external NFSv4 endpoints as if they are local to the cluster",
+    ):
+        for out in utils.run_command_with_output("echo 'TO BE IMPLEMENTED'"):
+            st.code(out, language="shell")
+
+    if st.button(
+        "Import S3 Endpoint",
+        key="btn_s3_import",
+        help="Data Fabric Object Store can facilitate access to external S3-compatible endpoints as if they're local buckets",
+    ):
+        for out in utils.run_command_with_output("echo 'TO BE IMPLEMENTED'"):
+            st.code(out, language="shell")
+
+
 DEMO_LIST = {
     "⛲ Multi-Modal": {
         "function": inout,
@@ -591,5 +619,11 @@ DEMO_LIST = {
         "function": datamasking,
         "title": "Dynamic Data Masking on Tables",
         "keywords": ["security", "confidential", "data masking"],
+    },
+    "🔭 GNS": {
+        "function": gns,
+        "title": "Global Namespace",
+        "flow": "Access data on external sources as if they're local to the cluster",
+        "keywords": ["s3", "nfsv4", "unified"],
     },
 }
