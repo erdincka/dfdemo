@@ -1,6 +1,6 @@
 sources = [
     "File",
-    "NASA API",
+    "REST API",
     # "Sales DB",
     "Stream",
 ]

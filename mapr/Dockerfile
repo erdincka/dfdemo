@@ -40,7 +40,8 @@ RUN apt install -y \
 
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
 
-EXPOSE 8443 8501 2222 8047 8780 12443 3000 8780 8888
+# Possible services to expose, WebUI, App, SSH, Drill, Airflow, NiFi, Grafana, Hue ## TODO: add spark-historyserver
+EXPOSE 8443 8501 22 8047 8780 12443 3000 8888
 
 # fix init-script
 RUN sed -i '/after cldb /a while [[ ! -f /tmp/maprticket_0 ]]; do (echo mapr | maprlogin password -user mapr); sleep 1; done' /usr/bin/init-script

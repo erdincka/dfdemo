@@ -10,7 +10,7 @@ from utils import not_implemented
 @st.fragment
 def data_transformation():
     keys = st.session_state.source_dataframe.columns
-    cols = st.columns(4, gap="medium", vertical_alignment="center")
+    cols = st.columns(5, gap="medium", vertical_alignment="center")
     with cols[0]:
         st.selectbox(
             "Index",
@@ -56,6 +56,14 @@ def data_transformation():
             key="label_column",
         )
         st.write(f"Label: {st.session_state.label_column}")
+
+    with cols[4]:
+        if st.button(
+            "Apply",
+            help="Creates in-memory copy of the input dataset with selected transformation. Output will be written with these ETL processing applied.",
+            icon=":material/rocket:",
+        ):
+            st.rerun()
 
 
 @st.fragment

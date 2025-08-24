@@ -75,7 +75,8 @@ async def sidebar():
             # )
 
     with sb.container():
-        restcalls.opentsdb_monitoring()
+        # restcalls.opentsdb_monitoring()
+        restcalls.monitoring()
         # await restcalls.topic_stats("/demovol/demostream", "incoming")
 
     sb.markdown(

@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from timeit import default_timer
 import streamlit as st
 import pandas as pd
 import json
@@ -21,14 +20,14 @@ def inout():
 
     if st.button(
         "Publish sample data to *incoming* topic",
-        help='To use "Stream" source, publish some messages into it.',
+        help='To use "Stream" source, publish sample messages into it.',
     ):
         utils.sample_to_incoming()
 
     cols = st.columns(2, border=True)
     # Source selection
     with cols[0]:
-        st.title("Source")
+        st.subheader("Source", help="Multi-format data ingestion", divider=True)
         source = st.segmented_control(
             "Source", key="source", options=constants.sources, label_visibility="hidden"
         )
@@ -46,7 +45,7 @@ def inout():
                 else:
                     st.session_state["source_dataframe"] = pd.DataFrame()
 
-            case "NASA API":
+            case "REST API":
                 search_terms = [
                     "missile",
                     "earthquake",
@@ -88,7 +87,7 @@ def inout():
     # Destination selection
     with cols[1]:
         if input_record_count:
-            st.title("Destination")
+            st.subheader("Destination", help="Multi-format data storage", divider=True)
             st.segmented_control(
                 "Target",
                 options=constants.targets,

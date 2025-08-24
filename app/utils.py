@@ -318,6 +318,15 @@ def APPs(hostname: str):
                 }
             )
 
+        if is_port_open(8888):
+            res.append(
+                {
+                    "name": "Hue",
+                    "help": "SQL Assistant for Databases & Data Warehouses",
+                    "url": f"https://{hostname}:8888",
+                }
+            )
+
     return res
 
 
