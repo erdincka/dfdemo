@@ -203,34 +203,73 @@ def add_documents(table_path: str, docs: list):
 #             logger.info("No data points found for that query.")
 
 
-# async def topic_stats(stream_path: str, topic: str):
-#     try:
-#         URL = (
-#             f"https://mapr:8443/rest/stream/topic/info?path={stream_path}&topic={topic}"
-#         )
+async def topic_stats(stream_path: str, topic: str):
+    try:
+        if st.session_state.get("metrics", pd.DataFrame()).empty:
+            st.session_state["metrics"] = pd.DataFrame()
 
-#         async with httpx.AsyncClient(
-#             verify=False
-#         ) as client:  # using async httpx instead of sync requests to avoid blocking the event loop
-#             response = await client.get(URL, auth=auth, timeout=2.0)
+        URL = (
+            f"https://mapr:8443/rest/stream/topic/info?path={stream_path}&topic={topic}"
+        )
 
-#             if response is None or response.status_code != 200:
-#                 # possibly not connected or topic not populated yet, just ignore
-#                 logger.warning(f"Failed to get topic stats for {topic}")
+        async with httpx.AsyncClient(
+            verify=False
+        ) as client:  # using async httpx instead of sync requests to avoid blocking the event loop
+            response = await client.get(URL, auth=auth, timeout=2.0)
 
-#             else:
-#                 metrics = response.json()
-#                 if not metrics["status"] == "ERROR":
-#                     logger.debug(metrics)
-#                     df = pd.DataFrame(metrics["data"], columns=["timestamp", "value"])
-#                     df["timestamp"] = pd.to_datetime(
-#                         pd.to_numeric(metrics["timestamp"]), unit="ms"
-#                     )
-#                     st.line_chart(df, x="timestamp", y="value")
-#                 else:
-#                     # possibly topic is not created yet
-#                     logger.warning("Topic stat query error %s", metrics["errors"])
+            if response is None or response.status_code != 200:
+                # possibly not connected or topic not populated yet, just ignore
+                logger.warning(f"Failed to get topic stats for {topic}")
 
-#     except Exception as error:
-#         logger.warning("Topic stat request error %s", error)
-#         # delayed query if failed - possibly cluster is not accessible
+            else:
+                metrics = response.json()
+                if not metrics["status"] == "ERROR":
+                    logger.debug(metrics)
+                    df = pd.DataFrame(
+                        metrics["data"],
+                        columns=[
+                            "timestamp",
+                            "logicalsize",
+                            "maxoffset",
+                            "minoffsetacrossconsumers",
+                        ],
+                    )
+                    df["timestamp"] = pd.to_datetime(
+                        pd.to_numeric(metrics["timestamp"]), unit="ms"
+                    )
+                    df = df.rename(
+                        columns={
+                            "logicalsize": "Size (KB)",
+                            "maxoffset": "Published",
+                            "minoffsetacrossconsumers": "Consumed",
+                        }
+                    )
+                    # Fix numbers
+                    df["Size (KB)"] /= 1000  # bytes to KB
+                    df["Published"] += 1  # published count - maxoffset starts from 0
+
+                    st.session_state["metrics"] = pd.concat(
+                        [st.session_state["metrics"], df], ignore_index=True
+                    )
+                    logger.info(st.session_state["metrics"])
+                    st.line_chart(
+                        st.session_state["metrics"],
+                        x="timestamp",
+                        y=["Size (KB)", "Published", "Consumed"],
+                    )
+                else:
+                    # possibly topic is not created yet
+                    logger.warning("Topic stat query error %s", metrics["errors"])
+
+    except Exception as error:
+        logger.warning("Topic stat request error %s", error)
+        # delayed query if failed - possibly cluster is not accessible
+
+
+@st.fragment(run_every="5s")
+def autorefresh():
+    try:
+        asyncio.run(topic_stats("/demovol/demostream", "incoming"))
+
+    except Exception as error:
+        logger.error(error)

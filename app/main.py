@@ -23,7 +23,7 @@ async def sidebar():
     apps = utils.APPs(hostname)
 
     sb = st.sidebar
-    sb.toggle("Enable AI Model", key="use_ai")
+    # sb.toggle("Enable AI Model", key="use_ai")
 
     # List URLs
     sb.write("Services")
@@ -76,20 +76,24 @@ async def sidebar():
     with sb.container():
         enable_refresh = st.toggle("Monitoring 📊")
         if enable_refresh:
-            st.write("TODO!")
-        # restcalls.opentsdb_monitoring()
-        # await restcalls.topic_stats("/demovol/demostream", "incoming")
+            st.write("TODO: Add charts/metrics")
+            # restcalls.opentsdb_monitoring()
+            restcalls.autorefresh()
 
     sb.markdown(
         """
         Learn more about [HPE Data Fabric](https://docs.ezmeral.hpe.com/datafabric-customer-managed/710/MapROverview/c_overview_intro.html)
-                """
+
+        Demo is also available on [GitHub](https://github.com/erdincka/dfdemo)
+        """
     )
 
 
 async def main():
     st.set_page_config(page_title="HPE Data Fabric Demo", layout="wide")
     await sidebar()
+
+    st.header("Data Fabric in action!")
 
     demo_list = list(demos.DEMO_LIST.keys())
 
