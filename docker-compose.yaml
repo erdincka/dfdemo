@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
       args:
         # - MAPR_REPO=https://package.ezmeral.hpe.com/releases/
-        - MAPR_REPO=http://repo.kayalab.uk/mapr/ # this is my local repo, default is the line above
+        - MAPR_REPO=http://repo.ez.win.lab/mapr/ # this is my local repo, default is the line above
         # Don't change these unless you are using a newer sandbox image
         - UBUNTU_VERSION=22.04
         - NIFI_VERSION=1.28.0
@@ -23,7 +23,7 @@ services:
       - MAPR_TZ=Europe/London
       - TZ=Europe/London
       # CHANGE THIS WITH YOUR DOCKER HOSTNAME/FQDN
-      - NIFI_WEB_PROXY_HOST=docker.kayalab.uk:12443
+      - NIFI_WEB_PROXY_HOST=docker.ez.win.lab:12443
       - NIFI_VERSION=1.28.0
       - NIFI_USER=admin
       # Following password needs to be min 12 chars
@@ -54,7 +54,7 @@ services:
       context: ./app
       dockerfile: Dockerfile
       args:
-        - MAPR_REPO=http://repo.kayalab.uk/mapr/ # this is my local repo, delete for default
+        - MAPR_REPO=http://repo.ez.win.lab/mapr/ # this is my local repo, delete for default
       platforms:
         - "linux/amd64"
     container_name: app
