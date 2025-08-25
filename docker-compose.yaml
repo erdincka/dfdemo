@@ -78,6 +78,21 @@ services:
       # - ./wgetrc:/root/.wgetrc:ro
       # - ./mysql.cnf:/etc/mysql/conf.d/client.cnf
 
+  mesh:
+    image: local/mesh:latest
+    build:
+      context: ./mesh
+      dockerfile: Dockerfile
+      platforms:
+        - "linux/amd64"
+    restart: always
+    container_name: mesh
+    ports:
+      - "3005:3000"
+    cap_add:
+      - SYS_ADMIN
+    privileged: true
+
   # nfs:
   #   platform: linux/amd64
   #   image: itsthenetwork/nfs-server-alpine:latest
