@@ -22,14 +22,12 @@
 
     `docker exec -it db bash`
 
-    `mysql -uroot`
+    `mysql -uroot -p` and enter `Admin123.` for password.
 
     ```sql
-    GRANT REPLICATION SLAVE ON *.* TO 'mysql'@'%'`
-
-    FLUSH PRIVILEGES
-
-    exit
+    GRANT REPLICATION SLAVE ON *.* TO 'mysql'@'%';
+    FLUSH PRIVILEGES;
+    exit;
     ```
 
 - To use the [Token-Authenticated Repository](https://docs.ezmeral.hpe.com/datafabric-customer-managed/710/AdvancedInstallation/Using_Ezmeral_Internet_Repo.html), you need to [Obtain A Token](https://docs.ezmeral.hpe.com/datafabric-customer-managed/710/AdvancedInstallation/Obtaining_a_Token.html) as explained in the documentation.

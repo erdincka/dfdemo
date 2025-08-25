@@ -1,3 +1,4 @@
+import asyncio
 import os
 from pathlib import Path
 import streamlit as st
@@ -455,17 +456,27 @@ def cdc():
 
     st.image("./images/CDC Demo.png", caption="Demo Flow", use_container_width=True)
 
-    st.download_button(
-        label="1. Download the flow file",
-        data=utils.file_content("/HPE_Data_Fabric_Demo.json"),
-        # file_name="cdc_flow.json",
-        mime="application/json",
-        icon=":material/download:",
-    )
+    # st.download_button(
+    #     label="1. Download the flow file",
+    #     data=utils.file_content("/HPE_Data_Fabric_Demo.json"),
+    #     # file_name="cdc_flow.json",
+    #     mime="application/json",
+    #     icon=":material/download:",
+    # )
 
     hostname = os.environ["PUBLIC_HOSTNAME"]
-
     nifi_url = f"https://{hostname}:12443/nifi"
+    if st.button("Setup NiFi"):
+        if restcalls.setup_nifi_flow(hostname):
+            st.write('Open NiFi UI, double click to the "Process Group".')
+            st.write(
+                'Double-click on "CaptureChangeMySQL processor", click "Stop & Configure", go to "Properties" tab and enter `Admin123.` in the "Password" field. Click "Apply" to close. Finally right click and "Start".'
+            )
+            st.image(
+                "./images/NiFi_CaptureChangeMySQL.png", caption="Change MySQL Password"
+            )
+            st.image("./images/NiFi_MySQLPassword.png", caption="Set MySQL password")
+
     st.link_button(
         "Open NiFi",
         url=nifi_url,
@@ -473,32 +484,27 @@ def cdc():
     )
 
     st.write("Login with credentials: `admin`/`Admin123.Admin123.`")
-    st.write(
-        "Drag 'Process Group' icon from top of the page onto canvas, click on the browse icon to upload the flow file"
-    )
-    st.image("./images/NiFi_UploadFlow.png", caption="upload flow file")
 
-    st.write(
-        'Select the "Process Group", and select the `Configuration` icon for "HPE Data Fabric Demo"'
-    )
-    st.image(
-        "./images/NiFi_ControllerSettings.png",
-        caption="Update controller configuration",
-    )
-    st.write(
-        'In the "Controller Services" tab, enable all services by clicking the lightning icon and then selecting "Enable".'
-    )
-    st.image("./images/NiFi_ControllerServices.png", caption="Enable services")
-    st.write('Close the configuration window and double click to the "Process Group".')
-    st.write(
-        'Double-click on "CaptureChangeMySQL processor", go to "Properties" tab and enter `Admin123.` in the "Password" field. Click "Apply" to close.'
-    )
-    st.image("./images/NiFi_CaptureChangeMySQL.png", caption="Change MySQL Password")
-    st.image("./images/NiFi_MySQLPassword.png", caption="Set MySQL password")
+    # st.write(
+    #     "Drag 'Process Group' icon from top of the page onto canvas, click on the browse icon to upload the flow file"
+    # )
+    # st.image("./images/NiFi_UploadFlow.png", caption="upload flow file")
 
-    st.write(
-        'Click on empty space on the canvas, and select "Play" button to start all processors.'
-    )
+    # st.write(
+    #     'Select the "Process Group", and select the `Configuration` icon for "HPE Data Fabric Demo"'
+    # )
+    # st.image(
+    #     "./images/NiFi_ControllerSettings.png",
+    #     caption="Update controller configuration",
+    # )
+    # st.write(
+    #     'In the "Controller Services" tab, enable all services by clicking the lightning icon and then selecting "Enable".'
+    # )
+    # st.image("./images/NiFi_ControllerServices.png", caption="Enable services")
+
+    # st.write(
+    #     'Click on empty space on the canvas, and select "Play" button to start all processors.'
+    # )
 
     # st.link_button("Grafana", url=f"https://{hostname}:3000")
     st.write("Open Grafana dashboard for detailed monitoring.")

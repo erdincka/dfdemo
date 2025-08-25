@@ -1,13 +1,13 @@
 import asyncio
-from datetime import datetime
 import json
 import os
+import time
 import urllib.parse
+import uuid
 import httpx
 import pandas as pd
 import streamlit as st
 
-import streams
 from config import logger
 
 auth = ("mapr", "mapr")
@@ -251,7 +251,8 @@ async def topic_stats(stream_path: str, topic: str):
                     st.session_state["metrics"] = pd.concat(
                         [st.session_state["metrics"], df], ignore_index=True
                     )
-                    logger.info(st.session_state["metrics"])
+                    logger.debug(st.session_state["metrics"])
+                    st.write(f"**Stream stats for {stream_path}:{topic}**")
                     st.line_chart(
                         st.session_state["metrics"],
                         x="timestamp",
@@ -272,4 +273,107 @@ def autorefresh():
         asyncio.run(topic_stats("/demovol/demostream", "incoming"))
 
     except Exception as error:
+        st.write("Loading in 5s...")
         logger.error(error)
+
+
+def setup_nifi_flow(hostname: str):
+    # 🔐 NiFi Credentials and API setup
+    TEMPLATE_FILE = "/DF_CDC.xml"
+    NIFI_API = f"https://{hostname}:12443/nifi-api"
+    NIFI_USER = "admin"
+    NIFI_PASSWORD = "Admin123.Admin123."
+    CDC_PROCESSOR = "CaptureChangeMySQL"
+    MYSQL_PASSWORD = "Admin123."
+
+    # 🚪 Get access token
+    def get_token():
+        response = httpx.post(
+            f"{NIFI_API}/access/token",
+            data={"username": NIFI_USER, "password": NIFI_PASSWORD},
+            verify=False,
+        )
+        response.raise_for_status()
+        return response.text
+
+    # 📤 Upload template XML
+    def upload_template(file_path, root_pg_id):
+        import xml.etree.ElementTree as ET
+
+        with open(file_path, "rb") as f:
+            files = {"template": (os.path.basename(file_path), f, "application/xml")}
+            response = client.post(
+                f"{NIFI_API}/process-groups/{root_pg_id}/templates/upload", files=files
+            )
+
+        response.raise_for_status()
+        logger.debug(response.text)
+        # Parse XML response to extract template ID
+        root = ET.fromstring(response.text)
+        template_id = root.find(".//id")
+        return template_id.text
+
+    # 🧱 Instantiate template on canvas
+    def instantiate_template(template_id, position={"x": 0.0, "y": 0.0}):
+        response = client.post(
+            f"{NIFI_API}/process-groups/root/template-instance",
+            json={
+                "templateId": template_id,
+                "originX": position["x"],
+                "originY": position["y"],
+            },
+        )
+        response.raise_for_status()
+        logger.debug(response.text)
+        # Extract the first process group ID from the instantiated flow
+        pg_list = response.json()["flow"]["processGroups"]
+        if not pg_list:
+            raise Exception("No process groups found in instantiated template.")
+        return pg_list[0]["id"]
+
+    # 🔧 Enable all controller services
+    def enable_controller_services(pg_id):
+        services = client.get(
+            f"{NIFI_API}/flow/process-groups/{pg_id}/controller-services"
+        ).json()["controllerServices"]
+        for svc in services:
+            svc_id = svc["id"]
+            revision = svc["revision"]
+            client.put(
+                f"{NIFI_API}/controller-services/{svc_id}/run-status",
+                json={"revision": revision, "state": "ENABLED"},
+            )
+
+    # ▶️ Start the process group
+    def start_process_group(pg_id):
+        client.put(
+            f"{NIFI_API}/flow/process-groups/{pg_id}",
+            json={"id": pg_id, "state": "RUNNING"},
+        )
+
+    try:
+        token = get_token()
+        headers = {"Authorization": f"Bearer {token}"}
+        client = httpx.Client(headers=headers, verify=False)
+
+        # Get root canvas ID
+        root_pg = client.get(f"{NIFI_API}/flow/process-groups/root").json()[
+            "processGroupFlow"
+        ]["id"]
+
+        # Upload and instantiate template
+        template_id = upload_template(TEMPLATE_FILE, root_pg)
+        logger.debug("Got templateID: %s", template_id)
+        pg_id = instantiate_template(template_id, position={"x": 100.0, "y": 100.0})
+        logger.debug("Got pg_id: %s", pg_id)
+
+        time.sleep(2)  # Give NiFi a moment to register the flow
+        enable_controller_services(pg_id)
+        start_process_group(pg_id)
+
+        st.success("✅ Template uploaded, configured, and started.")
+        return True
+    except Exception as error:
+        logger.error(error)
+        st.error(error)
+        return False
