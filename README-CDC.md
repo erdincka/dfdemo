@@ -61,7 +61,7 @@ You can then open NiFi endpoint to enable/disable the flow, and use Drill to que
 
     - It will take few seconds to reflect the process on UI, but you should see files immediately
     
-    - `ls /mapr/dfab.io/user/mapr/users/`
+    - `ls /mapr/dfab.io/demovol/users/`
 
 
 - (Optional) Query JSON files with Drill
@@ -71,7 +71,7 @@ You can then open NiFi endpoint to enable/disable the flow, and use Drill to que
     then Run
 
     ```sql
-    select * from dfs.`/user/mapr/users/`;
+    select * from dfs.`/demovol/users/`;
     ```
 
 - Repeat last two steps side by side, so run `users.py` to send new records to MySQL, and run `select * from` query to see updated records immediately.

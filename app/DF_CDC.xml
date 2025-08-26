@@ -1917,7 +1917,7 @@
                             </entry>
                             <entry>
 <key>Directory</key>
-<value>maprfs:///user/mapr/users</value>
+<value>maprfs:///demovol/users</value>
                             </entry>
                             <entry>
 <key>Conflict Resolution Strategy</key>

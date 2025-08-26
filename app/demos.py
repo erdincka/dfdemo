@@ -484,7 +484,7 @@ def cdc():
     st.dataframe(
         s3.summarize_s3_folder("demobucket", "users/")
     )  # use prefix with trailing slash otherwise files starting with 'users', such as 'users.csv' will be included
-    st.dataframe(utils.dir_stats("/mapr/dfab.io/user/mapr/users"))
+    st.dataframe(utils.dir_stats("/mapr/dfab.io/demovol/users"))
 
     # st.write(
     #     "Drag 'Process Group' icon from top of the page onto canvas, click on the browse icon to upload the flow file"

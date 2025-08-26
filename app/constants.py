@@ -29,8 +29,8 @@ DEMO_STREAM = "/demovol/demostream"
 
 DEMO_FOLDERS = [
     "/",
-    "/user/mapr/users",
     "/demovol",
+    "/demovol/users",
     "/tenant1",
     "/tenant1/user11",
     "/tenant1/user12",

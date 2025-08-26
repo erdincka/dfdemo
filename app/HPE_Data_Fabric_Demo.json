@@ -1073,7 +1073,7 @@
                     "Append Mode": "DEFAULT",
                     "writing-strategy": "writeAndRename",
                     "Kerberos Relogin Period": "4 hours",
-                    "Directory": "maprfs:///user/mapr/users",
+                    "Directory": "maprfs:///demovol/users",
                     "Conflict Resolution Strategy": "fail"
                 },
                 "propertyDescriptors": {
