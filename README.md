@@ -18,18 +18,6 @@
 
 - 20GB+ memory required for docker!!
 
-- You need to run these manually on db:
-
-    `docker exec -it db bash`
-
-    `mysql -uroot -p` and enter `Admin123.` for password.
-
-    ```sql
-    GRANT REPLICATION SLAVE ON *.* TO 'mysql'@'%';
-    FLUSH PRIVILEGES;
-    exit;
-    ```
-
 - To use the [Token-Authenticated Repository](https://docs.ezmeral.hpe.com/datafabric-customer-managed/710/AdvancedInstallation/Using_Ezmeral_Internet_Repo.html), you need to [Obtain A Token](https://docs.ezmeral.hpe.com/datafabric-customer-managed/710/AdvancedInstallation/Obtaining_a_Token.html) as explained in the documentation.
 
     Replace the `wgetrc` file with your credentials using the following format and uncomment `wgetrc` lines under the `volumes` for "mapr" and "app" services.

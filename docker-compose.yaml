@@ -123,6 +123,7 @@ services:
     volumes:
       - mysql:/var/lib/mysql
       - ./mysqld.cnf:/etc/mysql/conf.d/mysqld.cnf
+      - ./grant.sql:/docker-entrypoint-initdb.d/grant.sql:ro
 
   # minio:
   #   platform: linux/amd64
