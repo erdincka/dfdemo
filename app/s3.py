@@ -104,3 +104,30 @@ def list_bucket(bucket: str):
     except Exception as e:
         logger.error(e)
         raise e
+
+
+def summarize_s3_folder(bucket, prefix):
+    try:
+        if not prefix.endswith("/"):
+            prefix += "/"
+        client = get_client()
+        paginator = client.get_paginator("list_objects_v2")
+        pages = paginator.paginate(Bucket=bucket, Prefix=prefix)
+
+        total_size = 0
+        object_count = 0
+
+        for page in pages:
+            for obj in page.get("Contents", []):
+                total_size += obj["Size"]
+                object_count += 1
+                logger.debug(obj)
+
+        return {
+            "📁 Folder": f"s3://{bucket}/{prefix}",
+            "📦 Objects": object_count,
+            "🧮 Total size": f"{total_size / (1024**2):.2f} MB",
+        }
+
+    except Exception as error:
+        logger.error(error)

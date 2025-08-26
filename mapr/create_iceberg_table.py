@@ -1,4 +1,5 @@
 import configparser
+
 from pyspark.sql import SparkSession  # type: ignore
 from pyspark.sql.types import StructType, StructField, IntegerType, StringType  # type: ignore
 
@@ -9,10 +10,10 @@ aws_endpoint = "https://127.0.0.1:9000"
 aws_access_key = config["default"]["aws_access_key_id"]
 aws_secret_key = config["default"]["aws_secret_access_key"]
 
-iceberg_warehouse = "s3a://demobucket/iceberg/"
+iceberg_warehouse = f"s3a://demobucket/iceberg/"
 iceberg_table = "demo.users"
 
-# Create Spark session with Iceberg and S3 support
+# 🚀 Create Spark session with Iceberg and S3 support
 spark = (
     SparkSession.builder.appName("IcebergCreation")
     .config("spark.sql.catalog.demo", "org.apache.iceberg.spark.SparkCatalog")
@@ -25,7 +26,9 @@ spark = (
     .getOrCreate()
 )
 
-# Create Iceberg table if it doesn't exist
+print("✅ Spark session created")
+
+# 🧊 Create Iceberg table if it doesn't exist
 spark.sql(
     f"""
     CREATE TABLE IF NOT EXISTS {iceberg_table} (
@@ -55,3 +58,5 @@ spark.sql(
     USING iceberg
 """
 )
+
+print(f"✅ Iceberg table '{iceberg_table}' created")

@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 import subprocess
 import socket
 from urllib.parse import urlparse
@@ -471,3 +472,37 @@ def remount_tenant():
 
     else:
         logger.info("No tenant selected!")
+
+
+def dir_stats(folder: str):
+    try:
+        path = Path(folder)
+        files = [f for f in path.rglob("*") if f.is_file()]
+
+        total_size = sum(f.stat().st_size for f in files)
+
+        return {
+            "📁 Directory": folder,
+            "📦 Files": len(files),
+            "🧮 Total size": f"{total_size / (1024**2):.2f} MB",
+        }
+
+    except Exception as error:
+        logger.warning("Bucket stat error %s", error)
+
+
+async def parquet_stats(filepath: str):
+    try:
+        df = pd.read_parquet(filepath)
+        st.write(f"**Stats for {filepath}**")
+        # Basic stats
+        st.write(f"👥 Total users: {len(df)}")
+        st.write(f"📦 Columns: {list(df.columns)}")
+
+        # Value counts (example)
+        if "sex" in df.columns:
+            st.write("🔐 Gender distribution:")
+            st.write(df["sex"].value_counts())
+
+    except Exception as error:
+        logger.warning("Bucket stat error %s", error)

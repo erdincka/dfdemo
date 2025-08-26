@@ -1,9 +1,7 @@
 import asyncio
-import json
 import os
 import time
 import urllib.parse
-import uuid
 import httpx
 import pandas as pd
 import streamlit as st
@@ -252,11 +250,12 @@ async def topic_stats(stream_path: str, topic: str):
                         [st.session_state["metrics"], df], ignore_index=True
                     )
                     logger.debug(st.session_state["metrics"])
-                    st.write(f"**Stream stats for {stream_path}:{topic}**")
+                    st.write(f"⛲ **{stream_path}:{topic}**")
                     st.line_chart(
                         st.session_state["metrics"],
                         x="timestamp",
                         y=["Size (KB)", "Published", "Consumed"],
+                        height=240,
                     )
                 else:
                     # possibly topic is not created yet
@@ -311,7 +310,10 @@ def setup_nifi_flow(hostname: str):
         # Parse XML response to extract template ID
         root = ET.fromstring(response.text)
         template_id = root.find(".//id")
-        return template_id.text
+        if template_id and template_id.text != "":
+            return template_id.text
+        else:
+            raise ValueError("TemplateID not found")
 
     # 🧱 Instantiate template on canvas
     def instantiate_template(template_id, position={"x": 0.0, "y": 0.0}):

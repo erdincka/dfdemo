@@ -70,9 +70,14 @@ mkdir /mapr/dfab.io/tenant1/user11; chown user11:tenant1 /mapr/dfab.io/tenant1/u
 mkdir /mapr/dfab.io/tenant1/user12; chown user12:tenant1 /mapr/dfab.io/tenant1/user12
 mkdir /mapr/dfab.io/tenant2/user21; chown user21:tenant2 /mapr/dfab.io/tenant2/user21
 
+# Ensure folder exists for Iceberg table
+/opt/mapr/bin/mc mb df/demobucket/iceberg/
+/opt/mapr/bin/mc policy set public df/demobucket/iceberg;
 # Create Iceberg table on S3 bucket
+# TODO: Fix this
 # /opt/mapr/spark/spark-3.5.5/bin/pyspark \
-#   --packages org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.9.2 < /home/mapr/create_iceberg_table.py > /dev/null
+#     --packages org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.9.2 < /home/mapr/create_iceberg_table.py > /dev/null
+
 
 echo "[ $(date) ] CREDENTIALS:"
 # echo "Hive Credentials: hive/Admin123."

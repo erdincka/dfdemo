@@ -1,4 +1,3 @@
-import asyncio
 import os
 from pathlib import Path
 import streamlit as st
@@ -383,14 +382,6 @@ def datamasking():
 
 
 def cdc():
-    st.markdown(
-        """
-        #### TODO
-        - NiFi flow file automatically uploaded to NiFi using REST API
-        - Embed dashboard for realtime updates within app UI
-    """
-    )
-
     # --- New: Verify MySQL connection to 'demodb' on host 'db' ---
     conn: MySQLConnection = (
         utils.get_mysql_connection()
@@ -424,6 +415,42 @@ def cdc():
         logger.error(error)
         st.error(error)
 
+    st.image("./images/CDC Demo.png", caption="Demo Flow", use_container_width=True)
+
+    # st.download_button(
+    #     label="1. Download the flow file",
+    #     data=utils.file_content("/HPE_Data_Fabric_Demo.json"),
+    #     # file_name="cdc_flow.json",
+    #     mime="application/json",
+    #     icon=":material/download:",
+    # )
+
+    hostname = os.environ["PUBLIC_HOSTNAME"]
+    nifi_url = f"https://{hostname}:12443/nifi"
+    if st.button(
+        "Setup NiFi",
+        help="Run this only once!!! Or go to NiFi UI, and delete the Process Group and Template.",
+    ):
+        if restcalls.setup_nifi_flow(hostname):
+            st.write('Open NiFi UI, double click to the "Process Group".')
+            st.write(
+                'Double-click on "CaptureChangeMySQL processor", click "Stop & Configure", go to "Properties" tab and enter `Admin123.` in the "Password" field. Click "Apply" to close. Finally right click and "Start".'
+            )
+            st.image(
+                "./images/NiFi_CaptureChangeMySQL.png", caption="Change MySQL Password"
+            )
+            st.image("./images/NiFi_MySQLPassword.png", caption="Set MySQL password")
+
+    st.subheader("Open NiFi UI to configure and monitor", divider=True)
+    st.link_button(
+        "Open NiFi",
+        url=nifi_url,
+        help=nifi_url,
+    )
+
+    st.write("Login with credentials: `admin`/`Admin123.Admin123.`")
+
+    st.subheader("Add users to DB and monitor NiFi flow", divider=True)
     row = st.columns([1, 5], vertical_alignment="bottom")
     myinsert, myselect = row[0].columns(2)
     if myinsert.button(
@@ -454,36 +481,10 @@ def cdc():
                     df = df.set_index("id")
                 st.dataframe(df)
 
-    st.image("./images/CDC Demo.png", caption="Demo Flow", use_container_width=True)
-
-    # st.download_button(
-    #     label="1. Download the flow file",
-    #     data=utils.file_content("/HPE_Data_Fabric_Demo.json"),
-    #     # file_name="cdc_flow.json",
-    #     mime="application/json",
-    #     icon=":material/download:",
-    # )
-
-    hostname = os.environ["PUBLIC_HOSTNAME"]
-    nifi_url = f"https://{hostname}:12443/nifi"
-    if st.button("Setup NiFi"):
-        if restcalls.setup_nifi_flow(hostname):
-            st.write('Open NiFi UI, double click to the "Process Group".')
-            st.write(
-                'Double-click on "CaptureChangeMySQL processor", click "Stop & Configure", go to "Properties" tab and enter `Admin123.` in the "Password" field. Click "Apply" to close. Finally right click and "Start".'
-            )
-            st.image(
-                "./images/NiFi_CaptureChangeMySQL.png", caption="Change MySQL Password"
-            )
-            st.image("./images/NiFi_MySQLPassword.png", caption="Set MySQL password")
-
-    st.link_button(
-        "Open NiFi",
-        url=nifi_url,
-        help=nifi_url,
-    )
-
-    st.write("Login with credentials: `admin`/`Admin123.Admin123.`")
+    st.dataframe(
+        s3.summarize_s3_folder("demobucket", "users/")
+    )  # use prefix with trailing slash otherwise files starting with 'users', such as 'users.csv' will be included
+    st.dataframe(utils.dir_stats("/mapr/dfab.io/user/mapr/users"))
 
     # st.write(
     #     "Drag 'Process Group' icon from top of the page onto canvas, click on the browse icon to upload the flow file"
