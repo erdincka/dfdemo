@@ -344,17 +344,17 @@ def datamasking():
         if action2.button("🔎", key="seeDDMtypes", help="Show DDM predefined types"):
             utils.show_ddm_types()
 
-        selected_mask = masks.selectbox(
-            "Mask Types",
-            options=[d["name"] for d in restcalls.list_datamasks()],
-            index=None,
-            key="selected_mask",
-        )
         selected_field = fields.selectbox(
             "Field",
             options=["name", "creditcard", "address", "mobile", "ssn", "iban"],
             index=None,
             key="selected_field",
+        )
+        selected_mask = masks.selectbox(
+            "Mask Types",
+            options=[d["name"] for d in restcalls.list_datamasks()],
+            index=None,
+            key="selected_mask",
         )
         if (
             selected_field
@@ -443,6 +443,9 @@ def cdc():
                 "./images/NiFi_CaptureChangeMySQL.png", caption="Change MySQL Password"
             )
             st.image("./images/NiFi_MySQLPassword.png", caption="Set MySQL password")
+            st.write(
+                "Click on 'NiFi Flow' at the bottom left corner, right click on empty space in the canvas, and select 'Run'."
+            )
 
     st.subheader("Open NiFi UI to configure and monitor", divider=True)
     st.link_button(
@@ -467,6 +470,7 @@ def cdc():
         cursor.executemany(sql, vals)
         conn.commit()
         st.success(f"{cursor.rowcount} row(s) added.")
+        st.info("Refresh button to see new records updated in both bucket and volume")
 
     if myselect.button(
         "",
@@ -564,6 +568,9 @@ def cross_protocol():
     )
 
     st.markdown("### Write files using HDFS")
+    st.write(
+        f"The following will run a command that will create an empty file with a random name and *.tmp* extension in **{constants.DEMO_VOLUME}**."
+    )
     if st.button("Write HDFS"):
         with st.echo():
             filename = uuid4().hex
@@ -573,6 +580,9 @@ def cross_protocol():
                 st.code(out)
 
     st.markdown("### Read files as S3 objects")
+    st.write(
+        f"The following will run a command that will list all objects in the filesystem **{constants.DEMO_VOLUME}**, you should see another random filename with *.tmp* extension added."
+    )
     if st.button("List with S3"):
         with st.echo():
             for out in utils.run_command_with_output(

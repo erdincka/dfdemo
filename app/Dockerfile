@@ -13,7 +13,7 @@ COPY . /app/
 COPY .streamlit /app/
 COPY entrypoint.sh /
 COPY create-demo-table.sql /
-COPY HPE_Data_Fabric_Demo.json /
+COPY DF_CDC.xml /
 COPY ./mysql.cnf /etc/mysql/conf.d/client.cnf
 
 
