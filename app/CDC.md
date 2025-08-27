@@ -8,7 +8,7 @@
 - Open [NiFi](https://localhost:12443/nifi) to configure passwords and enable controllers
     - Login with `admin/Admin123.Admin123.` (or use your credentials if you've changed in the `docker-compose.yaml` file).
 
-    - Drag "Process Group" from top of the page onto Canvas, browse to upload the ![flow file: HPE Data Fabric Demo.json](./HPE_Data_Fabric_Demo.json).
+    - Drag "Process Group" from top of the page onto Canvas, import the [flow file: DF_CDC.xml](./app/DF_CDC.xml).
 
         - Select the Process Group, and select ![Settings](./images/NiFi_ControllerSettings.png) for "NiFi Flow".
     

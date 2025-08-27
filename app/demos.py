@@ -420,14 +420,6 @@ def cdc():
 
     st.image("./images/CDC Demo.png", caption="Demo Flow", use_container_width=True)
 
-    # st.download_button(
-    #     label="1. Download the flow file",
-    #     data=utils.file_content("/HPE_Data_Fabric_Demo.json"),
-    #     # file_name="cdc_flow.json",
-    #     mime="application/json",
-    #     icon=":material/download:",
-    # )
-
     hostname = os.environ["PUBLIC_HOSTNAME"]
     nifi_url = f"https://{hostname}:12443/nifi"
     if st.button(
@@ -675,7 +667,7 @@ DEMO_LIST = {
         "flow": "Access data on external sources as if they're local to the cluster",
         "keywords": ["s3", "nfsv4", "unified"],
     },
-    "❎ XProto": {
+    "✖️ XProto": {
         "function": cross_protocol,
         "title": "Cross Protocol Data Access",
         "flow": "Read and write data using S3 and Posix",
