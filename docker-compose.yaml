@@ -92,6 +92,7 @@ services:
     cap_add:
       - SYS_ADMIN
     privileged: true
+    entrypoint: /bin/bash -c "(echo `getent hosts mapr` maprdemo.mapr.io | tee -a /etc/hosts) && exec python3 main.py"
 
   # nfs:
   #   platform: linux/amd64
