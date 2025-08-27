@@ -40,7 +40,7 @@ mount -t nfs localhost:/mapr /mapr
 # mount -t nfs -o vers=4,proto=tcp,nolock,sec=sys mapr:/mapr /mapr
 
 echo "[ $(date) ] Setting up mc alias for S3"
-/opt/mapr/bin/mc alias set df https://dfab.io:9000 $access_key $secret_key
+/opt/mapr/bin/mc alias set df https://maprdemo.mapr.io:9000 $access_key $secret_key
 
 echo "[ $(date) ] Creating demo volume, bucket, and stream"
 maprcli volume create -name demovol -path /demovol -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
@@ -66,9 +66,9 @@ echo user21:mapr | chpasswd
 echo mapr | maprlogin generateticket -type tenant -user user11 -out /home/mapr/tenant_user11_ticket.txt
 echo mapr | maprlogin generateticket -type tenant -user user21 -out /home/mapr/tenant_user21_ticket.txt
 chown mapr:mapr /home/mapr/tenant_user11_ticket.txt /home/mapr/tenant_user21_ticket.txt
-mkdir /mapr/dfab.io/tenant1/user11; chown user11:tenant1 /mapr/dfab.io/tenant1/user11
-mkdir /mapr/dfab.io/tenant1/user12; chown user12:tenant1 /mapr/dfab.io/tenant1/user12
-mkdir /mapr/dfab.io/tenant2/user21; chown user21:tenant2 /mapr/dfab.io/tenant2/user21
+mkdir /mapr/maprdemo.mapr.io/tenant1/user11; chown user11:tenant1 /mapr/maprdemo.mapr.io/tenant1/user11
+mkdir /mapr/maprdemo.mapr.io/tenant1/user12; chown user12:tenant1 /mapr/maprdemo.mapr.io/tenant1/user12
+mkdir /mapr/maprdemo.mapr.io/tenant2/user21; chown user21:tenant2 /mapr/maprdemo.mapr.io/tenant2/user21
 
 # Ensure folder exists for Iceberg table
 /opt/mapr/bin/mc mb df/demobucket/iceberg/

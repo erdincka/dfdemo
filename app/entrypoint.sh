@@ -31,11 +31,11 @@ while [[ ! -f /home/mapr/tenant_user21_ticket.txt || ! -f /home/mapr/.aws/creden
 done
 
 # Configure secure client
-/opt/mapr/server/configure.sh -N dfab.io -c -secure -C mapr:7222 -OT mapr
+/opt/mapr/server/configure.sh -N maprdemo.mapr.io -c -secure -C mapr:7222 -OT mapr
 
 # Obtain ticket for mapr user
 cat /root/mapr_password | maprlogin password -user mapr
-echo `getent hosts mapr` dfab.io >> /etc/hosts
+# echo `getent hosts mapr` dfab.io >> /etc/hosts
 
 # Setup S3 access
 mkdir -p /root/.mc/certs/CAs; mkdir -p /home/mapr/.aws
@@ -50,7 +50,7 @@ access_key=$(grep accessKey /home/mapr/.aws/credentials | awk '{ print $3 }')
 secret_key=$(grep secretKey /home/mapr/.aws/credentials | awk '{ print $3 }')
 curl -Lso /opt/mapr/bin/mc https://dl.min.io/client/mc/release/linux-amd64/mc
 chmod +x /opt/mapr/bin/mc
-/opt/mapr/bin/mc alias set df https://dfab.io:9000 $access_key $secret_key
+/opt/mapr/bin/mc alias set df https://maprdemo.mapr.io:9000 $access_key $secret_key
 
 # Add certificate to store
 cp /root/.mc/certs/CAs/chain-ca.pem /usr/local/share/ca-certificates/chain-ca.crt

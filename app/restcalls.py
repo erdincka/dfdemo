@@ -6,6 +6,7 @@ import httpx
 import pandas as pd
 import streamlit as st
 
+from constants import DEMO_VOLUME, MOUNT_PATH
 from config import logger
 
 auth = ("mapr", "mapr")
@@ -95,7 +96,7 @@ def list_datamasks():
 
 def get_documents(table_path: str, auth: tuple[str, str] = auth):
     # Return if table does not exist
-    if not os.path.islink(f"/mapr/dfab.io/demovol/{table_path}"):
+    if not os.path.islink(f"{MOUNT_PATH}/{DEMO_VOLUME}/{table_path}"):
         return
     logger.info(f"Reading table {table_path} as user {auth[0]}")
     try:
@@ -310,10 +311,10 @@ def setup_nifi_flow(hostname: str):
         # Parse XML response to extract template ID
         root = ET.fromstring(response.text)
         template_id = root.find(".//id")
-        if template_id and template_id.text != "":
-            return template_id.text
-        else:
-            raise ValueError("TemplateID not found")
+        # if template_id and template_id.text != "":
+        return template_id.text  # pyright: ignore[reportOptionalMemberAccess]
+        # else:
+        #     raise ValueError("TemplateID not found")
 
     # 🧱 Instantiate template on canvas
     def instantiate_template(template_id, position={"x": 0.0, "y": 0.0}):

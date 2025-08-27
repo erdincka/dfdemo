@@ -31,12 +31,12 @@
 
     - It will take few seconds to reflect the process on UI, but you should see files immediately
     
-    - `ls /mapr/dfab.io/demovol/users/`
+    - `ls /mapr/maprdemo.mapr.io/demovol/users/`
 
 
 - (Optional) Query JSON files with Drill
 
-    `/opt/mapr/drill/drill-1.21.2/bin/sqlline -u 'jdbc:drill:drillbit=dfab.io:31010;auth=MAPRSASL'`
+    `/opt/mapr/drill/drill-1.21.2/bin/sqlline -u 'jdbc:drill:drillbit=maprdemo.mapr.io:31010;auth=MAPRSASL'`
 
     then Run
 

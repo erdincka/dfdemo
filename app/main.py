@@ -76,7 +76,7 @@ async def sidebar():
     with sb.container():
         enable_refresh = st.toggle("Monitoring 📊")
         if enable_refresh:
-            st.write("TODO: Add charts/metrics")
+            st.write("TODO: Add more charts/metrics")
             # restcalls.opentsdb_monitoring()
             restcalls.autorefresh()
 

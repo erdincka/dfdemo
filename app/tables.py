@@ -1,4 +1,5 @@
 import os
+from constants import CLUSTER_NAME, MOUNT_PATH
 from mapr.ojai.storage.ConnectionFactory import ConnectionFactory
 
 import pandas as pd
@@ -32,7 +33,7 @@ def get_connection():
         f"localhost:5678?auth=basic;user=mapr;password=mapr;"
         "ssl=true;"
         "sslCA=/opt/mapr/conf/ssl_truststore.pem;"
-        f"sslTargetNameOverride=dfab.io"
+        f"sslTargetNameOverride={CLUSTER_NAME}"
     )
 
     ojaiconnection = ConnectionFactory.get_connection(connection_str=connection_str)
@@ -253,7 +254,7 @@ async def delta_table_upsert(table_path: str, records: pd.DataFrame):
     """
 
     try:
-        table_uri = f"/mapr/dfab.io/{table_path}"
+        table_uri = f"/{MOUNT_PATH}/{table_path}"
 
         df = pd.DataFrame().from_records(records)
 
@@ -292,7 +293,7 @@ async def delta_table_get(table_path, query: str = ""):
     Returns all records from the binary table as DataFrame
     """
 
-    fullpath = f"/mapr/dfab.io/{table_path}"
+    fullpath = f"{MOUNT_PATH}/{table_path}"
 
     if not os.path.exists(fullpath):
         logger.warning("%s not created yet", fullpath)

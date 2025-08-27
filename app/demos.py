@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from uuid import uuid4
 import streamlit as st
 import pandas as pd
 import json
@@ -197,7 +198,9 @@ def inout():
                         else st.session_state["source_dataframe"]
                     )
                     # Create the full path for saving
-                    save_path = Path(f"/mapr/dfab.io/demovol/{filename}")
+                    save_path = Path(
+                        f"/mapr/{constants.CLUSTER_NAME}/{constants.DEMO_VOLUME}/{filename}"
+                    )
                     logger.debug(st.session_state["format"])
                     if st.session_state["format"] == "csv":
                         df.to_csv(save_path.with_suffix(".csv"), index=False)
@@ -484,7 +487,9 @@ def cdc():
     st.dataframe(
         s3.summarize_s3_folder("demobucket", "users/")
     )  # use prefix with trailing slash otherwise files starting with 'users', such as 'users.csv' will be included
-    st.dataframe(utils.dir_stats("/mapr/dfab.io/demovol/users"))
+    st.dataframe(
+        utils.dir_stats(f"{constants.MOUNT_PATH}/{constants.DEMO_VOLUME}/users")
+    )
 
     # st.write(
     #     "Drag 'Process Group' icon from top of the page onto canvas, click on the browse icon to upload the flow file"
@@ -526,27 +531,54 @@ def gns():
         "*Ability to attach to external data sources, and making them part of the global namespace, so users and apps can access/manipulate the data on these sources without knowing their original location.*"
     )
 
-    st.write("Looking at the global mount point - */mapr* ")
+    st.markdown("### 👈 Open DFUI to add external S3 endpoint")
 
-    with st.echo():
-        for out in utils.run_command_with_output("ls -la /mapr"):
-            st.code(out)
+    st.write("TODO: Configure sandbox to use NFSv4!")
 
-    if st.button(
-        "Mount NFSv4 volume",
-        key="btn_nfs_mount",
-        help="GNS facilitates access to external NFSv4 endpoints as if they are local to the cluster",
-    ):
-        for out in utils.run_command_with_output("echo 'TO BE IMPLEMENTED'"):
-            st.code(out, language="shell")
+    # st.write("Looking at the global mount point - */mapr* ")
 
-    if st.button(
-        "Import S3 Endpoint",
-        key="btn_s3_import",
-        help="Data Fabric Object Store can facilitate access to external S3-compatible endpoints as if they're local buckets",
-    ):
-        for out in utils.run_command_with_output("echo 'TO BE IMPLEMENTED'"):
-            st.code(out, language="shell")
+    # with st.echo():
+    #     for out in utils.run_command_with_output("ls -la /mapr"):
+    #         st.code(out)
+
+    # if st.button(
+    #     "Mount NFSv4 volume",
+    #     key="btn_nfs_mount",
+    #     help="GNS facilitates access to external NFSv4 endpoints as if they are local to the cluster",
+    # ):
+    #     for out in utils.run_command_with_output("echo 'TO BE IMPLEMENTED'"):
+    #         st.code(out, language="shell")
+
+    # if st.button(
+    #     "Import S3 Endpoint",
+    #     key="btn_s3_import",
+    #     help="Data Fabric Object Store can facilitate access to external S3-compatible endpoints as if they're local buckets",
+    # ):
+    #     for out in utils.run_command_with_output("echo 'TO BE IMPLEMENTED'"):
+    #         st.code(out, language="shell")
+
+
+def cross_protocol():
+    st.write(
+        "*Access the same data via different APIs, enabling apps and users reading and writing data in their preferred protocol*"
+    )
+
+    st.markdown("### Write files using HDFS")
+    if st.button("Write HDFS"):
+        with st.echo():
+            filename = uuid4().hex
+            for out in utils.run_command_with_output(
+                f"hadoop fs -touchz /demovol/{filename}.tmp"
+            ):
+                st.code(out)
+
+    st.markdown("### Read files as S3 objects")
+    if st.button("List with S3"):
+        with st.echo():
+            for out in utils.run_command_with_output(
+                "/opt/mapr/bin/mc ls df/filestore/demovol/"
+            ):
+                st.code(out)
 
 
 DEMO_LIST = {
@@ -632,5 +664,11 @@ DEMO_LIST = {
         "title": "Global Namespace",
         "flow": "Access data on external sources as if they're local to the cluster",
         "keywords": ["s3", "nfsv4", "unified"],
+    },
+    "❎ XProto": {
+        "function": cross_protocol,
+        "title": "Cross Protocol Data Access",
+        "flow": "Read and write data using S3 and Posix",
+        "keywords": ["s3", "posix", "hdfs", "data access"],
     },
 }

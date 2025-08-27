@@ -1,7 +1,7 @@
 services:
   mapr:
     platform: linux/amd64
-    image: local/mapr:0.1.15
+    image: local/mapr:0.1.16
     build:
       context: ./mapr
       dockerfile: Dockerfile
@@ -15,10 +15,10 @@ services:
       platforms:
         - "linux/amd64"
     container_name: mapr
-    hostname: mapr
+    # hostname: mapr.dfab.io # Set by init-script to maprdemo
     restart: unless-stopped
     environment:
-      - clusterName=dfab.io
+      # - clusterName=dfab.io # Set by init-script to maprdemo.mapr.io
       - isSecure=true
       - MAPR_TZ=Europe/London
       - TZ=Europe/London
@@ -49,7 +49,7 @@ services:
 
   app:
     platform: linux/amd64
-    image: local/app:0.1.12
+    image: local/app:0.1.13
     build:
       context: ./app
       dockerfile: Dockerfile

@@ -390,7 +390,7 @@ def get_folder_list(folder: str):
     if folder not in constants.DEMO_FOLDERS:
         return content
 
-    base_path = Path(f"/mapr/dfab.io/{folder}")
+    base_path = Path(f"{constants.MOUNT_PATH}/{folder}")
 
     try:
         for entry in base_path.iterdir():
@@ -452,20 +452,20 @@ def remount_tenant():
     if tenant:
         logger.info("Remount running for %s", tenant)
         user = "user11" if tenant == "Tenant1" else "user21"
-        mount_point = "/t1" if tenant == "Tenant1" else "/t2"
-        export_path = "/tenant1" if tenant == "Tenant1" else "/tenant2"
+        vol_mount_point = "/t1" if tenant == "Tenant1" else "/t2"
+        vol_export_path = "/tenant1" if tenant == "Tenant1" else "/tenant2"
         user_path = "/t1/user11" if tenant == "Tenant1" else "/t2/user21"
 
         for out in run_command_with_output(
             f"""
             sed -i 's|^fuse.ticketfile.location=.*|fuse.ticketfile.location=/home/mapr/tenant_{user}_ticket.txt|' /opt/mapr/conf/fuse.conf
-            sed -i 's|^fuse.mount.point=.*|fuse.mount.point={mount_point}|' /opt/mapr/conf/fuse.conf
-            sed -i 's|^.*fuse.export=.*|fuse.export=/dfab.io/{export_path}/|' /opt/mapr/conf/fuse.conf
+            sed -i 's|^fuse.mount.point=.*|fuse.mount.point={vol_mount_point}|' /opt/mapr/conf/fuse.conf
+            sed -i 's|^.*fuse.export=.*|fuse.export=/{constants.CLUSTER_NAME}/{vol_export_path}/|' /opt/mapr/conf/fuse.conf
             # echo "Restarting Posix client to remount tenant volume"
             service mapr-posix-client-basic restart 2>&1 > /dev/null
             # service mapr-posix-client-basic status 2> /dev/null
             while [ ! -d {user_path} ]; do sleep 2; done # ensure mount is completed
-            echo "{mount_point} mounted with {user} ticket!"
+            echo "{vol_mount_point} mounted with {user} ticket!"
         """
         ):
             logger.info(out)
@@ -483,7 +483,7 @@ def dir_stats(folder: str):
 
         return {
             "📁 Directory": folder,
-            "📦 Files": len(files),
+            "📦 Files": str(len(files)),
             "🧮 Total size": f"{total_size / (1024**2):.2f} MB",
         }
 

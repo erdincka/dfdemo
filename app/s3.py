@@ -4,6 +4,8 @@ import boto3
 from io import StringIO, BytesIO
 import logging
 
+import constants
+
 logger = logging.getLogger(__name__)
 # Workaround https://github.com/boto/boto3/issues/4400#issuecomment-2600742103
 # boto3.set_stream_logger('')
@@ -22,7 +24,7 @@ def get_client():
         "s3",
         aws_access_key_id=config["default"]["aws_access_key_id"],
         aws_secret_access_key=config["default"]["aws_secret_access_key"],
-        endpoint_url="https://dfab.io:9000",
+        endpoint_url=f"https://{constants.CLUSTER_NAME}:9000",
         use_ssl=True,
         # verify=False
         verify="/root/.mc/certs/CAs/chain-ca.pem",
@@ -125,7 +127,7 @@ def summarize_s3_folder(bucket, prefix):
 
         return {
             "📁 Folder": f"s3://{bucket}/{prefix}",
-            "📦 Objects": object_count,
+            "📦 Objects": str(object_count),
             "🧮 Total size": f"{total_size / (1024**2):.2f} MB",
         }
 
