@@ -516,8 +516,34 @@ def cdc():
 
 
 def mesh():
-    st.link_button("Mesh", f"http://{os.environ['PUBLIC_HOSTNAME']}:3005/mesh/")
+    st.write("##### Data Mesh Architecture")
+    st.markdown(
+        "Defining hub-and-spoke layout with every 'box' representing a separate Data Fabric cluster, while being part of the Global Namespace.",
+        help="A 'data mesh hub and spoke' is a federated data governance model within a data mesh architecture, where a central 'hub' team defines global standards, tools, and infrastructure, while decentralized 'spoke' teams (data domains) independently develop and publish domain-specific data products, ensuring both consistency and flexibility. This approach balances centralized control for essential functions like governance and security with the agility and ownership of decentralized data product development by business domains.",
+    )
+    st.write(
+        "Data Fabric Global Namespace allows using a central (hub) cluster that hosts shared services and organisational policies, definitions as well as a 'data marketplace' that serves as an 'Enterprise Data Catalogue'."
+    )
+    st.image("./images/hubspoke.png", caption="Data Mesh in Hub-Spoke")
 
+    st.write("##### Data Product - Fraud")
+    st.write(
+        "Focusing on a single department or project as the whole owner of a 'Data Product', which allows them autonomy and independence on the orchestration of all data ingestion, transformation and business outcomes, while keeping organisational policies and controls in place."
+    )
+    st.write(
+        "Taking the 'Fraud' department as an example, the department will have full control on how data is ingested, processed and stored. Eventually, they will have the final 'data product' that can be shared with the rest of the organisation by publishing their 'data product' to the 'Data Marketplace' with their defined 'data contracts'."
+    )
+    st.image(
+        "./images/frauddomain.png", caption="Fraud department as Data Product owner"
+    )
+    st.markdown(
+        "In this domain, we are using the *medallion architecture*. Using separate volumes for each layer allows different data placement, protection, cost & performance levels.",
+        help="The Medallion architecture is a data design pattern used in a lakehouse to organize data into three layers—Bronze, Silver, and Gold—each representing incrementally higher quality and refinement. The Bronze layer stores raw, untransformed data, while the Silver layer cleans, validates, and standardizes it. The Gold layer then transforms the data into enriched, business-ready datasets for analytics, machine learning, and reporting. This multi-layered approach ensures data quality, provides a single source of truth, and supports various use cases and workloads.",
+    )
+
+    st.link_button(
+        "Open Mesh demo", f"http://{os.environ['PUBLIC_HOSTNAME']}:3005/mesh/"
+    )
     st.write("If this is not working:")
     st.write("Use https://github.com/erdincka/catchx")
 
@@ -649,7 +675,20 @@ DEMO_LIST = {
     },
     "🕸️ Data Mesh": {
         "function": mesh,
-        "title": "Build a Data Mesh",
+        "title": "Build a Data Mesh with Data Products",
+        "flow": """
+        We aim to show the feature-rich data pipeline capabilities of HPE Data Fabric. 
+        
+        ## Fraud Detection pipeline demo with Ezmeral Data Fabric
+
+        This is not an accurate representation of a real fraud detection process, but rather an end-to-end demonstration of how a pipeline can be built using some of Ezmeral Data Fabric capabilities for a real-life scenario. We aim to highlight the flexibility and openness of Ezmeral Data Fabric as a converged data platform for various data types and choices of open-source ecosystem tools/frameworks.
+
+        The tools and frameworks used in the demo are selected with simplicity of their implementation in mind, but they are not meant to limit user's choice when it comes to real life implementation. Users are free to choose included or third-party tools, as Data Fabric supports various industry-standard protocols to read, process and store data.
+
+        The app shows the ingestion of transaction data (json) via Event Streams and batch customer data (csv files) into the fabric, and then storing and processing them through their lifecycle inside the Fabric, using technologies such as NoSQL Document DBs or Iceberg tables. Then at the final stage we both simulate a fraud detection ML model inferencing on incoming messages as well as providing consolidated information as a Data Product that can be shared within the organisation either for Business Intelligence & Analytics or for other consumption methods through query APIs.
+
+        We have already created volumes for the data product **fraud** as a representation of Madallion Architecture. We have *Bronz*, *Silver* and *Gold* volumes to represent data flow through its lifecycle.
+        """,
         "keywords": [
             "RDBMS",
             "real-time",

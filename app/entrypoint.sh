@@ -69,7 +69,8 @@ echo user12:mapr | chpasswd
 echo user21:mapr | chpasswd
 mkdir /t1
 mkdir /t2
-# save the original fuse.conf
+
+# save the original fuse.conf for backup
 cp /opt/mapr/conf/fuse.conf /opt/mapr/conf/fuse.orig
 
 echo "[ $(date) ] CREDENTIALS:"

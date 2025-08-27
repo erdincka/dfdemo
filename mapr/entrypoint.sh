@@ -47,6 +47,12 @@ maprcli volume create -name demovol -path /demovol -replication 1 -minreplicatio
 maprcli stream create -path /demovol/demostream -ttl 86400 -produceperm p -consumeperm p -topicperm p
 /opt/mapr/bin/mc mb df/demobucket
 
+# Create volumes for fraud demo
+maprcli volume create -name fraud -path /demovol/fraud -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
+maprcli volume create -name bronze -path /demovol/fraud/bronze -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
+maprcli volume create -name silver -path /demovol/fraud/silver -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
+maprcli volume create -name gold -path /demovol/fraud/gold -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
+
 # Create users for multi-tenant demo
 getent group tenant1 || groupadd -g 10000 tenant1
 getent group tenant2 || groupadd -g 20000 tenant2
