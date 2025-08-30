@@ -562,28 +562,6 @@ def gns():
 
     st.write("TODO: Configure sandbox to use NFSv4!")
 
-    # st.write("Looking at the global mount point - */mapr* ")
-
-    # with st.echo():
-    #     for out in utils.run_command_with_output("ls -la /mapr"):
-    #         st.code(out)
-
-    # if st.button(
-    #     "Mount NFSv4 volume",
-    #     key="btn_nfs_mount",
-    #     help="GNS facilitates access to external NFSv4 endpoints as if they are local to the cluster",
-    # ):
-    #     for out in utils.run_command_with_output("echo 'TO BE IMPLEMENTED'"):
-    #         st.code(out, language="shell")
-
-    # if st.button(
-    #     "Import S3 Endpoint",
-    #     key="btn_s3_import",
-    #     help="Data Fabric Object Store can facilitate access to external S3-compatible endpoints as if they're local buckets",
-    # ):
-    #     for out in utils.run_command_with_output("echo 'TO BE IMPLEMENTED'"):
-    #         st.code(out, language="shell")
-
 
 def cross_protocol():
     st.write(

@@ -226,17 +226,6 @@ def get_mysql_connection():
         st.error(f"Query error: {error}")
 
 
-# @st.dialog("Code", width='large')
-# def code_viewer(code: str, extra_code: str = ""):
-#     st.code(code)
-#     if extra_code:
-#         st.code(extra_code)
-
-
-# def nav_to(url):
-#     html(f'<script>window.open("{url}", "_blank").then(r => window.parent.location.href);</script>')
-
-
 def is_port_open(port: int):
     """
     Check if a port is open on host 'mapr'.
