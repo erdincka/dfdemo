@@ -126,22 +126,22 @@ services:
       - ./mysqld.cnf:/etc/mysql/conf.d/mysqld.cnf
       - ./grant.sql:/docker-entrypoint-initdb.d/grant.sql:ro
 
-  # minio:
-  #   platform: linux/amd64
-  #   image: minio/minio:latest
-  #   container_name: minio
-  #   hostname: minio
-  #   restart: unless-stopped
-  #   environment:
-  #     - MINIO_ROOT_USER='admin'
-  #     - MINIO_ROOT_PASSWORD='Admin123.'
-  #   # ports:
-  #   #   - "9000:9000"
-  #   volumes:
-  #     - /etc/timezone:/etc/timezone:ro
-  #     - /etc/localtime:/etc/localtime:ro
-  #     - minio-data:/data
-  #   command: server /data
+  minio:
+    platform: linux/amd64
+    image: minio/minio:latest
+    container_name: minio
+    hostname: minio
+    restart: unless-stopped
+    environment:
+      - MINIO_ROOT_USER='admin'
+      - MINIO_ROOT_PASSWORD='Admin123.'
+    # ports:
+    #   - "9000:9000"
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - minio-data:/data
+    command: server /data
 
 volumes:
   mysql: {}

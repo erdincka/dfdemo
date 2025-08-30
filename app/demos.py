@@ -547,10 +547,15 @@ def mesh():
     st.write("If this is not working:")
     st.write("Use https://github.com/erdincka/catchx")
 
+    st.subheader("Work in Progress!!! Do not run anything below.", divider=True)
+    if st.button("Add batch (customer) data"):
+        if utils.create_customers(count=100):
+            st.toast("customers.csv file is created for batch ingestion")
+
 
 def gns():
     st.write(
-        "*Ability to attach to external data sources, and making them part of the global namespace, so users and apps can access/manipulate the data on these sources without knowing their original location.*"
+        "*Ability to attach to external data sources, and making them part of the global namespace, so users and apps can access/modify the data on these sources without knowing their original location.*"
     )
 
     st.markdown("### 👈 Open DFUI to add external S3 endpoint")

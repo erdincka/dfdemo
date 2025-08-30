@@ -1,4 +1,6 @@
+import csv
 import json
+import os
 from pathlib import Path
 import subprocess
 import socket
@@ -13,6 +15,8 @@ from faker import Faker
 
 from config import logger
 import constants, s3, streams, restcalls
+
+fake = Faker(["en_GB"])
 
 
 def not_implemented():
@@ -130,14 +134,13 @@ def get_public_hostname():
 
 def sample_to_incoming():
     for _ in range(10):
-        msg = Faker().profile(fields=["name", "address", "job", "sex"])
+        msg = fake.profile(fields=["name", "address", "job", "sex"])
         if streams.produce(constants.DEMO_STREAM, "incoming", json.dumps(msg)):
             logger.info(f"Published {msg}")
 
 
 def sample_users(count: int = 10):
     res = []
-    fake = Faker("en_GB")
     for _ in range(count):
         new_user = {
             "_id": uuid4().hex,
@@ -506,3 +509,57 @@ async def parquet_stats(filepath: str):
 
     except Exception as error:
         logger.warning("Bucket stat error %s", error)
+
+
+def fake_customer():
+    profile = fake.profile()
+    # remove newline from address field
+    profile["address"] = profile[
+        "address"
+    ].replace(  # pyright: ignore[reportAttributeAccessIssue]
+        "\n", " "  # pyright: ignore[reportArgumentType]
+    )
+    customer = {
+        "_id": uuid4().hex,
+        **profile,
+        "account_number": fake.iban(),
+        "county": fake.county(),
+        "country_code": fake.current_country_code(),
+    }
+    # clean up
+    del customer["website"]
+    del customer["residence"]
+    customer["address"] = customer["address"].replace("\n", " ").replace("\r", " ")
+
+    return customer
+
+
+def create_customers(count: int = 200):
+    try:
+        # customers
+        customers = []
+        csvfile = f"{constants.MOUNT_PATH}/{constants.DEMO_VOLUME}/customers.csv"
+
+        if os.path.isfile(csvfile):
+            logger.info("Existing customers found, appending")
+            with open(csvfile, "r", newline="") as existingfile:
+                reader = csv.DictReader(existingfile)
+                customers += [row for row in reader]
+            logger.info("%d customers imported", len(customers))
+
+        for _ in range(count):
+            customers.append(fake_customer())
+
+        with open(csvfile, "w", newline="") as file:
+            fieldnames = fake_customer().keys()
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(customers)
+
+    except Exception as error:
+        logger.warning(error)
+        return False
+
+    logger.info("%d customers created", count)
+    st.success(f"{count} customers created")
+    return True
