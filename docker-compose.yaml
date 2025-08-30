@@ -129,8 +129,8 @@ services:
   s3:
     platform: linux/amd64
     image: minio/minio:latest
-    container_name: minio
-    hostname: minio
+    container_name: s3
+    hostname: s3
     restart: unless-stopped
     environment:
       - MINIO_ROOT_USER='admin'
