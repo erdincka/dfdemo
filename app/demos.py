@@ -559,6 +559,23 @@ def gns():
     )
 
     st.markdown("### 👈 Open DFUI to add external S3 endpoint")
+    st.markdown(
+        """
+             Select "Import External S3"
+
+             Name: 'ext-s3'
+
+             S3 Vendor: 'Generic'
+
+             Access Key: 'admin'
+
+             Secret Key: 'Admin123.'
+
+             Hostname: 's3'
+
+             Use TLS Encryption: false
+    """
+    )
 
     st.write("TODO: Configure sandbox to use NFSv4!")
 
