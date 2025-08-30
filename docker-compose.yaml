@@ -126,7 +126,7 @@ services:
       - ./mysqld.cnf:/etc/mysql/conf.d/mysqld.cnf
       - ./grant.sql:/docker-entrypoint-initdb.d/grant.sql:ro
 
-  minio:
+  s3:
     platform: linux/amd64
     image: minio/minio:latest
     container_name: minio
