@@ -35,7 +35,7 @@ done
 
 # Obtain ticket for mapr user
 cat /root/mapr_password | maprlogin password -user mapr
-echo `getent hosts mapr` maprdemo.mapr.io >> /etc/hosts
+echo `getent hosts mapr` maprdemo.mapr.io | tee -a /etc/hosts
 
 # Setup S3 access
 mkdir -p /root/.mc/certs/CAs; mkdir -p /home/mapr/.aws
