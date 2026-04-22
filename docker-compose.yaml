@@ -31,7 +31,7 @@ services:
     ports:
       # - "8501:8501"  ## if there is an app UI
       # - "9443:9443"  ## optional for Installer UI
-      - "8443:8443"  ## optional for MCS
+      - "8443:8443" ## optional for MCS
       # - "2222:22"  ## optional for SSH
       - "12443:12443" ## optional for NiFi
       - "8047:8047" ## optional for Drill
@@ -67,7 +67,7 @@ services:
         condition: service_healthy
         restart: true
     ports:
-      - "8501:8501"  ## required to use app UI
+      - "8501:8501" ## required to use app UI
     ## required to mount nfs
     privileged: true
     cap_add:
@@ -78,21 +78,21 @@ services:
       # - ./wgetrc:/root/.wgetrc:ro
       # - ./mysql.cnf:/etc/mysql/conf.d/client.cnf
 
-  mesh:
-    image: local/mesh:latest
-    build:
-      context: ./mesh
-      dockerfile: Dockerfile
-      platforms:
-        - "linux/amd64"
-    restart: always
-    container_name: mesh
-    ports:
-      - "3005:3000"
-    cap_add:
-      - SYS_ADMIN
-    privileged: true
-    entrypoint: /bin/bash -c "(echo `getent hosts mapr` maprdemo.mapr.io | tee -a /etc/hosts) && exec python3 main.py"
+  # mesh:
+  #   image: local/mesh:latest
+  #   build:
+  #     context: ./mesh
+  #     dockerfile: Dockerfile
+  #     platforms:
+  #       - "linux/amd64"
+  #   restart: always
+  #   container_name: mesh
+  #   ports:
+  #     - "3005:3000"
+  #   cap_add:
+  #     - SYS_ADMIN
+  #   privileged: true
+  #   entrypoint: /bin/bash -c "(echo `getent hosts mapr` maprdemo.mapr.io | tee -a /etc/hosts) && exec python3 main.py"
 
   # nfs:
   #   platform: linux/amd64
@@ -117,33 +117,33 @@ services:
     hostname: db
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: 'demodb'
-      MYSQL_USER: 'mysql'
-      MYSQL_PASSWORD: 'Admin123.'
-      MYSQL_ROOT_PASSWORD: 'Admin123.'
+      MYSQL_DATABASE: "demodb"
+      MYSQL_USER: "mysql"
+      MYSQL_PASSWORD: "Admin123."
+      MYSQL_ROOT_PASSWORD: "Admin123."
     volumes:
       - mysql:/var/lib/mysql
       - ./mysqld.cnf:/etc/mysql/conf.d/mysqld.cnf
       - ./grant.sql:/docker-entrypoint-initdb.d/grant.sql:ro
 
-  s3:
-    platform: linux/amd64
-    image: minio/minio:latest
-    container_name: s3
-    hostname: s3
-    restart: unless-stopped
-    environment:
-      - MINIO_ROOT_USER='admin'
-      - MINIO_ROOT_PASSWORD='Admin123.'
-    # ports:
-    #   - "9000:9000"
-    volumes:
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
-      - minio-data:/data
-    command: server /data
+  # s3:
+  #   platform: linux/amd64
+  #   image: minio/minio:latest
+  #   container_name: s3
+  #   hostname: s3
+  #   restart: unless-stopped
+  #   environment:
+  #     - MINIO_ROOT_USER='admin'
+  #     - MINIO_ROOT_PASSWORD='Admin123.'
+  #   # ports:
+  #   #   - "9000:9000"
+  #   volumes:
+  #     - /etc/timezone:/etc/timezone:ro
+  #     - /etc/localtime:/etc/localtime:ro
+  #     - minio-data:/data
+  #   command: server /data
 
 volumes:
   mysql: {}
-  minio-data: {}
-  nfs-data: {}
+  # nfs-data: {}
+  # minio-data: {}

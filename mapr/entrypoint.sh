@@ -12,13 +12,13 @@ echo "[ $(date) ] Data Fabric configuration is complete, preparing for demo..."
 echo mapr | sudo -u mapr maprlogin password
 
 # Set NiFi credentials
-/opt/mapr/nifi/nifi-"${NIFI_VERSION}"/bin/nifi.sh set-single-user-credentials "${NIFI_USER}" "${NIFI_PASSWORD}"
+# /opt/mapr/nifi/nifi-"${NIFI_VERSION}"/bin/nifi.sh set-single-user-credentials "${NIFI_USER}" "${NIFI_PASSWORD}"
 
-if [ -n "${NIFI_WEB_PROXY_HOST}" ]; then
-    sed -i "s|nifi.web.proxy.host=.*$|nifi.web.proxy.host=${NIFI_WEB_PROXY_HOST}|" /opt/mapr/nifi/nifi-${NIFI_VERSION}/conf/nifi.properties
-    /opt/mapr/nifi/nifi-1.28.0/bin/nifi.sh restart 2>&1 >> /root/nifi-restart.log
-    echo "[ $(date) ] NiFi set up to use proxy $NIFI_WEB_PROXY_HOST"
-fi
+# if [ -n "${NIFI_WEB_PROXY_HOST}" ]; then
+#     sed -i "s|nifi.web.proxy.host=.*$|nifi.web.proxy.host=${NIFI_WEB_PROXY_HOST}|" /opt/mapr/nifi/nifi-${NIFI_VERSION}/conf/nifi.properties
+#     /opt/mapr/nifi/nifi-1.28.0/bin/nifi.sh restart 2>&1 >> /root/nifi-restart.log
+#     echo "[ $(date) ] NiFi set up to use proxy $NIFI_WEB_PROXY_HOST"
+# fi
 
 # Setup Object Store
 mkdir -p /root/.mc/certs/CAs/; cp /opt/mapr/conf/ca/chain-ca.pem /root/.mc/certs/CAs/
@@ -48,33 +48,33 @@ maprcli stream create -path /demovol/demostream -ttl 86400 -produceperm p -consu
 /opt/mapr/bin/mc mb df/demobucket
 
 # Create volumes for fraud demo
-maprcli volume create -name fraud -path /demovol/fraud -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
-maprcli volume create -name bronze -path /demovol/fraud/bronze -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
-maprcli volume create -name silver -path /demovol/fraud/silver -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
-maprcli volume create -name gold -path /demovol/fraud/gold -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
+# maprcli volume create -name fraud -path /demovol/fraud -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
+# maprcli volume create -name bronze -path /demovol/fraud/bronze -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
+# maprcli volume create -name silver -path /demovol/fraud/silver -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
+# maprcli volume create -name gold -path /demovol/fraud/gold -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
 
-# Create users for multi-tenant demo
-getent group tenant1 || groupadd -g 10000 tenant1
-getent group tenant2 || groupadd -g 20000 tenant2
-id user11 || useradd -m -d /home/user11 -g 10000 -s /bin/bash -u 10001 user11
-id user12 || useradd -m -d /home/user12 -g 10000 -s /bin/bash -u 10002 user12
-id user21 || useradd -m -d /home/user21 -g 20000 -s /bin/bash -u 20002 user21
-echo user11:mapr | chpasswd
-echo user12:mapr | chpasswd
-echo user21:mapr | chpasswd
-# Allow users access to system (login)
-/opt/mapr/bin/maprcli acl set -type cluster -user root:fc mapr:fc user11:login user12:login user21:login
-# /opt/mapr/bin/maprcli acl set -type volume -name tenant1Vol -user mapr:fc user11:fc user12:m
+# # Create users for multi-tenant demo
+# getent group tenant1 || groupadd -g 10000 tenant1
+# getent group tenant2 || groupadd -g 20000 tenant2
+# id user11 || useradd -m -d /home/user11 -g 10000 -s /bin/bash -u 10001 user11
+# id user12 || useradd -m -d /home/user12 -g 10000 -s /bin/bash -u 10002 user12
+# id user21 || useradd -m -d /home/user21 -g 20000 -s /bin/bash -u 20002 user21
+# echo user11:mapr | chpasswd
+# echo user12:mapr | chpasswd
+# echo user21:mapr | chpasswd
+# # Allow users access to system (login)
+# /opt/mapr/bin/maprcli acl set -type cluster -user root:fc mapr:fc user11:login user12:login user21:login
+# # /opt/mapr/bin/maprcli acl set -type volume -name tenant1Vol -user mapr:fc user11:fc user12:m
 
-# Create volumes for multi-tenant demo
-/opt/mapr/bin/maprcli volume create -name tenant1Vol -path /tenant1 -tenantuser user11 -readAce 'g:tenant1' -writeAce 'u:user11' -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
-/opt/mapr/bin/maprcli volume create -name tenant2Vol -path /tenant2 -tenantuser user21 -readAce 'g:tenant2' -writeAce 'u:user21' -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
-echo mapr | maprlogin generateticket -type tenant -user user11 -out /home/mapr/tenant_user11_ticket.txt
-echo mapr | maprlogin generateticket -type tenant -user user21 -out /home/mapr/tenant_user21_ticket.txt
-chown mapr:mapr /home/mapr/tenant_user11_ticket.txt /home/mapr/tenant_user21_ticket.txt
-mkdir /mapr/maprdemo.mapr.io/tenant1/user11; chown user11:tenant1 /mapr/maprdemo.mapr.io/tenant1/user11
-mkdir /mapr/maprdemo.mapr.io/tenant1/user12; chown user12:tenant1 /mapr/maprdemo.mapr.io/tenant1/user12
-mkdir /mapr/maprdemo.mapr.io/tenant2/user21; chown user21:tenant2 /mapr/maprdemo.mapr.io/tenant2/user21
+# # Create volumes for multi-tenant demo
+# /opt/mapr/bin/maprcli volume create -name tenant1Vol -path /tenant1 -tenantuser user11 -readAce 'g:tenant1' -writeAce 'u:user11' -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
+# /opt/mapr/bin/maprcli volume create -name tenant2Vol -path /tenant2 -tenantuser user21 -readAce 'g:tenant2' -writeAce 'u:user21' -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
+# echo mapr | maprlogin generateticket -type tenant -user user11 -out /home/mapr/tenant_user11_ticket.txt
+# echo mapr | maprlogin generateticket -type tenant -user user21 -out /home/mapr/tenant_user21_ticket.txt
+# chown mapr:mapr /home/mapr/tenant_user11_ticket.txt /home/mapr/tenant_user21_ticket.txt
+# mkdir /mapr/maprdemo.mapr.io/tenant1/user11; chown user11:tenant1 /mapr/maprdemo.mapr.io/tenant1/user11
+# mkdir /mapr/maprdemo.mapr.io/tenant1/user12; chown user12:tenant1 /mapr/maprdemo.mapr.io/tenant1/user12
+# mkdir /mapr/maprdemo.mapr.io/tenant2/user21; chown user21:tenant2 /mapr/maprdemo.mapr.io/tenant2/user21
 
 # Ensure folder exists for Iceberg table
 /opt/mapr/bin/mc mb df/demobucket/iceberg/
