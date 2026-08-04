@@ -73,6 +73,28 @@ class MapRAPI:
             logger.error("API request failed: %s", e)
             return {"status": "ERROR", "errors": [{"msg": str(e)}]}
 
+    def _post_as_user(self, path: str, username: str, password: str,
+                      params: dict = None, json_data: dict = None) -> dict:
+        """Make a POST request to the MapR REST API authenticated as a specific user.
+        
+        This is used when resources need to be created with a specific owner,
+        e.g. creating a table owned by demo_admin.
+        """
+        if not self._hostname:
+            return {"status": "ERROR", "errors": [{"msg": "API client not configured"}]}
+        try:
+            url = f"{self._base_url}{path}"
+            with httpx.Client(auth=(username, password), verify=False, timeout=30.0) as client:
+                response = client.post(url, params=params, json=json_data)
+                response.raise_for_status()
+                return response.json()
+        except httpx.HTTPStatusError as e:
+            logger.error("HTTP error (as %s): %s", username, e)
+            return {"status": "ERROR", "errors": [{"msg": str(e)}]}
+        except Exception as e:
+            logger.error("API request failed (as %s): %s", username, e)
+            return {"status": "ERROR", "errors": [{"msg": str(e)}]}
+
     # ─── Volume Operations ───────────────────────────────────────────────
 
     def list_volumes(self) -> dict:
@@ -136,6 +158,38 @@ class MapRAPI:
             params["tenantuser"] = tenant_user
         return self._post("/rest/volume/create", params=params)
 
+    def create_volume_as_user(
+        self,
+        name: str,
+        path: str,
+        username: str,
+        password: str,
+        read_ace: str = "u:mapr",
+        write_ace: str = "u:mapr",
+        replication: int = 1,
+        min_replication: int = 1,
+        tenant_user: str = None,
+    ) -> dict:
+        """Create a new volume authenticated as a specific user.
+        
+        This ensures the volume is owned by the specified user.
+        """
+        params = {
+            "name": name,
+            "path": path,
+            "readAce": read_ace,
+            "writeAce": write_ace,
+            "replication": replication,
+            "minreplication": min_replication,
+            "nsreplication": replication,
+            "nsminreplication": min_replication,
+            "dare": "false",
+            "tieringenable": "false",
+        }
+        if tenant_user:
+            params["tenantuser"] = tenant_user
+        return self._post_as_user("/rest/volume/create", username, password, params=params)
+
     def delete_volume(self, name: str) -> dict:
         """Delete a volume."""
         return self._post("/rest/volume/delete", params={"name": name})
@@ -155,6 +209,20 @@ class MapRAPI:
         if default_read_perm:
             params["defaultreadperm"] = default_read_perm
         return self._post("/rest/table/create", params=params)
+
+    def create_table_as_user(self, path: str, username: str, password: str,
+                             table_type: str = "json", default_read_perm: str = "p") -> dict:
+        """Create a new table authenticated as a specific user.
+        
+        This ensures the table is owned by the specified user (e.g. demo_admin).
+        """
+        params = {
+            "path": path,
+            "tabletype": table_type,
+        }
+        if default_read_perm:
+            params["defaultreadperm"] = default_read_perm
+        return self._post_as_user("/rest/table/create", username, password, params=params)
 
     def table_exists(self, path: str) -> bool:
         """Check if a table exists using table info endpoint."""

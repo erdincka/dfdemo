@@ -15,16 +15,15 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
-podAnnotations:
-  sidecar.istio.io/inject: "true"
+podAnnotations: {}
 
 podLabels: {}
 
-securityContext:
-  privileged: true
-  capabilities:
-    add:
-      - SYS_ADMIN
+securityContext: {}
+  # privileged: true
+  # capabilities:
+  #   add:
+  #     - SYS_ADMIN
 
 service:
   type: ClusterIP
@@ -48,7 +47,7 @@ livenessProbe:
     path: /api/health
     port: 8000
     scheme: HTTP
-  initialDelaySeconds: 15
+  initialDelaySeconds: 5
   periodSeconds: 30
   timeoutSeconds: 10
   failureThreshold: 3
@@ -58,7 +57,7 @@ readinessProbe:
     path: /api/health
     port: 8000
     scheme: HTTP
-  initialDelaySeconds: 10
+  initialDelaySeconds: 5
   periodSeconds: 10
   timeoutSeconds: 5
   failureThreshold: 3

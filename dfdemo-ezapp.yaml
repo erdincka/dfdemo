@@ -1,0 +1,91 @@
+apiVersion: ezconfig.hpe.ezaf.com/v1alpha1
+kind: EzAppConfig
+metadata:
+  finalizers:
+    - ezappconfig.ezconfig.hpe.ezaf.com/finalizer
+  generation: 1
+  labels:
+    hpe-ezua/imported-app: "true"
+  name: dfdemo-1.0.1-1785857418814
+spec:
+  autoHelm: false
+  backoffLimit: 3
+  category: dataEngineering
+  chartVersion: 1.0.1
+  description: HPE Data Fabric Demo Runner - Security & Governance
+  install: true
+  label: Data Fabric Demo
+  logoImage: data:image/webp;base64,UklGRm4GAABXRUJQVlA4WAoAAAAgAAAAfwEAfwEASUNDUMgBAAAAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADZWUDgggAQAANA8AJ0BKoABgAE+kUafS6WjoqGl9FgAsBIJaW7hdVEX8bfRVebNvWl/S+SP7f1bq7P/EeT39r8AZWIMFjE9DPP+9K8AgPw9qx8aJT7Vj40Sn2rHxolPtWPjRKfasfGiU+1Y+NEp9qx8aJT7Vj40Sn2rHxolPtWPjRKfasfGiU+1Y+NEp9qx8aJT7Vj40Sn2rHxolPtWPjRKfasfGiU+1Y+NEp9qx8aJT7VjdvXUNGA0HMFUbnJ48tRPxXUGtasAKEaCOEUzPTwjHtuiqov7IH5E6RbWWj2VjAHoBWEecW5ze1KS8vzOPiflfFzdXvHIigE1wxR2aXzGgGvLNTbA++gRCBZf6WgbpewyzmHNVhfsvPTkaWOAobxw+JfNBkt9qU+JStmud5nv2XcR2yIq2zKuFuXg8aN0CBAG4120QGkvWMt99xBepJ62V0TSfNhmoYn64iW5FbBtoAxC//pyNLGdG5i0DJEILnuMc7FNfe/pP9XvNbRdmDJuEU4+WEqbd4OIG1oXeAytIZj43VlFRn5zEREgFMfGiU+1Y+NEp9qx8aJT7Vj40Sn2rHxolPtWPjRKfasfGiU+1Y+NEp9qx8aJT7Vj40Sn2rHxolPtWPjRKfasfGiU+1Y+NEp9qx8aJT7Vj40Sn2rHxolPtWPaAAD+/2VoAAAAAAAAAR/8dzBv9G19xr91ZuC3/QnEp9L9viO7T/4gLf+wIvvPw8RL0DwSmDTw2UVoJN+xMHQanxtNmINYMqR8Ix9KrdRVStJTStewqEcc7CEb1jz6NOlj7+VjwtoPZoNTKX/+qN1E5d+3PrZGf3hbeZzCgRjkGQgJZ0/CZfbrANzM23I1GVYV+Kut/i3HO/sQw3xYluXeHRrLLfzcDI3TdJtKe2EhVy7krsvFLpkRoh1iuUTvhABBDuW0Ae332lI59oOWk3bz86/Yj+gUeJmHJ/b9hNmDYnvDVh1YINdicwYiz+9AnIETAzJUJo761pSCZCSsOiqJ3r0Pn/IHRisogKNHOepb+NRYPZc+JYbY1YBXQVn7IBPNo9OW/bgP//8Lo+NrIz//CCU3mPMwpSOs//O75HP8a1GNCN//jz3PlV3CW/MTGqd2QUAdSr6ocukuwT891uLv9wi0sFQThYPPGhDnOhBhuH8ou6CFxMGVYYGZWXE+cTe+yULfq8bc00mNOZTO+OE0/QAkqDRuUrDXWCUq1mntoDWiE6hMgLyPxmy8ifQKMKn2iLUV/fsf7FYeIvuN/ypuHxT4BSw8v1r51GGcmkyKDt/wSo/11qMXNppkXBLapf+tpQyGddoO7iCM2yWmWBPsWbkGvaII7ZLioh5b3Fn9begWYcV7jjef1OPjJmyfkIZZjfPw2BYnWokpveIJBrc/+Pavg9VG+E8fcfNJ+cfBb73/5+MZzjUbgM6ow/xbzf+XgcAAEM2Gw+w5/RWfaSxSf0GXKa7cuQaxd27AfeRILlzLVA7VIc1sBR/9EHnv9IwG0KHzMrl9zJJ/TjNf5MCXng12bKcM4AAAAAAAAAAAAAAAAA==
+  name: dfdemo
+  options:
+    create-namespace: "true"
+    namespace: dfdemo
+    timeout: 45m
+    wait: "true"
+  values: |
+    ezua:
+      virtualService:
+        endpoint: "dfdemo.${DOMAIN_NAME}"
+        istioGateway: "istio-system/ezaf-gateway"
+
+    replicaCount: 1
+
+    image:
+      repository: erdincka/dfdemo
+      pullPolicy: Always
+      tag: "latest"
+
+    imagePullSecrets: []
+
+    nameOverride: ""
+    fullnameOverride: ""
+
+    podAnnotations: {}
+
+    podLabels: {}
+
+    securityContext: {}
+
+    service:
+      type: ClusterIP
+      port: 8000
+      targetPort: 8000
+
+    env:
+      LOG_LEVEL: "INFO"
+      PYTHONUNBUFFERED: "1"
+
+    resources:
+      limits:
+        cpu: "2"
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 128Mi
+
+    livenessProbe:
+      httpGet:
+        path: /api/health
+        port: 8000
+        scheme: HTTP
+      initialDelaySeconds: 5
+      periodSeconds: 30
+      timeoutSeconds: 10
+      failureThreshold: 3
+
+    readinessProbe:
+      httpGet:
+        path: /api/health
+        port: 8000
+        scheme: HTTP
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+
+    nodeSelector: {}
+
+    tolerations: []
+
+    affinity: {}
+  version: ""

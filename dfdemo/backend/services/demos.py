@@ -390,11 +390,15 @@ def setup_prerequisite(prereq_name: str) -> CommandResult:
                     success=True,  # Volume exists, so prerequisite is met
                 )
 
-        # Volume doesn't exist - create it with demo_admin as accountable entity
-        result = mapr_api.create_volume(
+        # Volume doesn't exist - create it AS demo_admin so demo_admin owns it with full control
+        # readAce: demo_admin (full control) + demogroup (read access for analyst)
+        # writeAce: demo_admin only (analyst cannot write)
+        result = mapr_api.create_volume_as_user(
             name=DEMO_VOLUME_NAME,
             path=DEMO_VOLUME_PATH,
-            read_ace=f"g:{DEMO_GROUP}",
+            username=DEMO_USER_ADMIN,
+            password=DEMO_USER_PASSWORD,
+            read_ace=f"u:{DEMO_USER_ADMIN}|g:{DEMO_GROUP}",
             write_ace=f"u:{DEMO_USER_ADMIN}",
             tenant_user=DEMO_USER_ADMIN,
         )
@@ -412,8 +416,8 @@ def setup_prerequisite(prereq_name: str) -> CommandResult:
                 owner_msg = f"\nWarning: Failed to set owner: {owner_err}"
 
             return CommandResult(
-                command=f"POST /rest/volume/create?name={DEMO_VOLUME_NAME}&path={DEMO_VOLUME_PATH}&readAce=g:{DEMO_GROUP}&writeAce=u:{DEMO_USER_ADMIN}&tenantuser={DEMO_USER_ADMIN}\nPOST /rest/volume/modify?name={DEMO_VOLUME_NAME}&owner={DEMO_USER_ADMIN}:{DEMO_GROUP}",
-                stdout=f"Volume '{DEMO_VOLUME_NAME}' created successfully at path '{DEMO_VOLUME_PATH}' with accountable entity '{DEMO_USER_ADMIN}'.{owner_msg}\n\nAPI Response: {json.dumps(result, indent=2)}",
+                command=f"POST /rest/volume/create (as {DEMO_USER_ADMIN})?name={DEMO_VOLUME_NAME}&path={DEMO_VOLUME_PATH}&readAce=u:{DEMO_USER_ADMIN}|g:{DEMO_GROUP}&writeAce=u:{DEMO_USER_ADMIN}&tenantuser={DEMO_USER_ADMIN}\nPOST /rest/volume/modify?name={DEMO_VOLUME_NAME}&owner={DEMO_USER_ADMIN}:{DEMO_GROUP}",
+                stdout=f"Volume '{DEMO_VOLUME_NAME}' created successfully at path '{DEMO_VOLUME_PATH}' owned by '{DEMO_USER_ADMIN}' with full control.{owner_msg}\n\nAPI Response: {json.dumps(result, indent=2)}",
                 stderr="",
                 exit_code=0,
                 success=True,
@@ -424,33 +428,70 @@ def setup_prerequisite(prereq_name: str) -> CommandResult:
             # If "already in use" error, volume exists - treat as success
             if "already in use" in error_msg.lower():
                 return CommandResult(
-                    command=f"POST /rest/volume/create?name={DEMO_VOLUME_NAME}&path={DEMO_VOLUME_PATH}&readAce=g:{DEMO_GROUP}&writeAce=u:{DEMO_USER_ADMIN}",
+                    command=f"POST /rest/volume/create (as {DEMO_USER_ADMIN})?name={DEMO_VOLUME_NAME}&path={DEMO_VOLUME_PATH}&readAce=u:{DEMO_USER_ADMIN}|g:{DEMO_GROUP}&writeAce=u:{DEMO_USER_ADMIN}",
                     stdout=f"Volume '{DEMO_VOLUME_NAME}' already exists (creation skipped).",
                     stderr="",
                     exit_code=0,
                     success=True,
                 )
             return CommandResult(
-                command=f"POST /rest/volume/create?name={DEMO_VOLUME_NAME}&path={DEMO_VOLUME_PATH}&readAce=g:{DEMO_GROUP}&writeAce=u:{DEMO_USER_ADMIN}",
+                command=f"POST /rest/volume/create (as {DEMO_USER_ADMIN})?name={DEMO_VOLUME_NAME}&path={DEMO_VOLUME_PATH}&readAce=u:{DEMO_USER_ADMIN}|g:{DEMO_GROUP}&writeAce=u:{DEMO_USER_ADMIN}",
                 stdout="",
                 stderr=f"Volume creation failed: {error_msg}\n\nFull API Response: {json.dumps(result, indent=2)}",
                 exit_code=1,
                 success=False,
             )
 
-    # Handle table creation via REST API only
+    # Handle table creation via REST API - create AS demo_admin so it's owned by demo_admin
     if prereq_name == "demo_table":
         # Ensure volume is mounted first via REST API
         mount_result = mapr_api.mount_volume(DEMO_VOLUME_NAME)
         # (mount may fail if already mounted - that's fine)
 
-        # Create table via REST API
-        result = mapr_api.create_table(DEMO_TABLE_PATH, "json", "p")
-        api_desc = f"POST /rest/table/create?path={DEMO_TABLE_PATH}&tabletype=json&defaultreadperm=p"
+        # Create table AS demo_admin so the table is owned by demo_admin
+        result = mapr_api.create_table_as_user(
+            DEMO_TABLE_PATH,
+            DEMO_USER_ADMIN,
+            DEMO_USER_PASSWORD,
+            "json",
+            "p",
+        )
+        api_desc = f"POST /rest/table/create (as {DEMO_USER_ADMIN})?path={DEMO_TABLE_PATH}&tabletype=json&defaultreadperm=p"
         if result.get("status") == "OK":
+            # Set column family permissions:
+            # - readperm: both demo_admin and demo_analyst can read
+            # - unmaskedreadperm: only demo_admin sees unmasked data
+            perm_result = mapr_api.set_cf_permission(
+                DEMO_TABLE_PATH,
+                "default",
+                read_perm=f"u:{DEMO_USER_ADMIN}|u:{DEMO_USER_RESTRICTED}",
+                unmasked_read_perm=f"u:{DEMO_USER_ADMIN}",
+            )
+            perm_status = perm_result.get("status", "ERROR")
+            perm_msg = f"\nColumn family permissions set: readperm=u:{DEMO_USER_ADMIN}|u:{DEMO_USER_RESTRICTED}, unmaskedreadperm=u:{DEMO_USER_ADMIN} ({perm_status})"
+
+            # Apply DDM rules to PII columns
+            ddm_results = []
+            masks_to_apply = [
+                ("email", "mrddm_email"),
+                ("ssn", "mrddm_last4"),
+                ("creditcard", "mrddm_first6last4"),
+                ("salary", "mrddm_redact"),
+            ]
+            for field, mask in masks_to_apply:
+                ddm_result = mapr_api.set_datamask(DEMO_TABLE_PATH, field, mask)
+                ddm_status = ddm_result.get("status", "ERROR")
+                ddm_results.append(f"  {field} -> {mask}: {ddm_status}")
+
+            ddm_msg = "\nDDM rules applied:\n" + "\n".join(ddm_results)
+
             return CommandResult(
                 command=api_desc,
-                stdout=f"Table '{DEMO_TABLE_NAME}' created successfully at path '{DEMO_TABLE_PATH}'\n\nAPI Response: {json.dumps(result, indent=2)}",
+                stdout=(
+                    f"Table '{DEMO_TABLE_NAME}' created successfully at path '{DEMO_TABLE_PATH}' "
+                    f"owned by '{DEMO_USER_ADMIN}'.{perm_msg}{ddm_msg}\n\n"
+                    f"API Response: {json.dumps(result, indent=2)}"
+                ),
                 stderr="",
                 exit_code=0,
                 success=True,
@@ -533,19 +574,25 @@ def run_step(step_id: int, params: dict = None) -> CommandResult:
 
 
 def _step_insert_data(params: dict = None) -> CommandResult:
-    """Step 1: Insert sample data with PII."""
+    """Step 1: Insert sample data with PII as demo_admin (table owner)."""
     count = (params or {}).get("count", 5)
     records = generate_sample_data(count)
 
-    result = mapr_api.add_documents(DEMO_TABLE_PATH, records)
+    # Insert data as demo_admin (the table owner) to ensure proper ownership
+    result = mapr_api.add_documents(
+        DEMO_TABLE_PATH,
+        records,
+        username=DEMO_USER_ADMIN,
+        password=DEMO_USER_PASSWORD,
+    )
 
     if result.get("status") == "OK":
-        out = f"Inserted {count} records into {DEMO_TABLE_PATH}\n\nSample records:\n"
+        out = f"Inserted {count} records into {DEMO_TABLE_PATH} (as {DEMO_USER_ADMIN})\n\nSample records:\n"
         out += json.dumps(records[:3], indent=2)
         if count > 3:
             out += f"\n... and {count - 3} more records"
         return CommandResult(
-            command=f"POST /api/v2/table/{DEMO_TABLE_PATH}",
+            command=f"POST /api/v2/table/{DEMO_TABLE_PATH} (as {DEMO_USER_ADMIN})",
             stdout=out,
             stderr="",
             exit_code=0,
@@ -553,7 +600,7 @@ def _step_insert_data(params: dict = None) -> CommandResult:
         )
     else:
         return CommandResult(
-            command=f"POST /api/v2/table/{DEMO_TABLE_PATH}",
+            command=f"POST /api/v2/table/{DEMO_TABLE_PATH} (as {DEMO_USER_ADMIN})",
             stdout="",
             stderr=f"Failed to insert documents: {result.get('error', 'Unknown error')}",
             exit_code=1,
