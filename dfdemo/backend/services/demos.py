@@ -569,7 +569,7 @@ def _step_apply_ddm() -> CommandResult:
 
     # Grant unmaskedread permission to admin user on the default column family
     # This allows demo_admin to see all data without masking
-    unmask_result = mapr_api.set_cf_permission(DEMO_TABLE_PATH, "default", read_perm=f"u:{DEMO_USER_ADMIN}:unmaskedread")
+    unmask_result = mapr_api.set_cf_permission(DEMO_TABLE_PATH, "default", unmasked_read_perm=f"u:{DEMO_USER_ADMIN}")
     unmask_status = unmask_result.get("status", "ERROR")
     results.append(f"  unmaskedread for {DEMO_USER_ADMIN}: {unmask_status}")
     if unmask_status != "OK":

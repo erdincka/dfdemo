@@ -218,20 +218,24 @@ class MapRAPI:
     # ─── Column Family Permissions ──────────────────────────────────────
 
     def set_cf_permission(self, table_path: str, cf_name: str = "default",
-                          read_perm: str = None, write_perm: str = None) -> dict:
+                          read_perm: str = None, write_perm: str = None,
+                          unmasked_read_perm: str = None) -> dict:
         """Set permissions on a column family.
         
         Args:
             table_path: Path to the table
             cf_name: Column family name (default: "default")
-            read_perm: Read permission ACE, e.g. "u:demo_admin:unmaskedread"
+            read_perm: Read permission ACE, e.g. "u:demo_admin"
             write_perm: Write permission ACE
+            unmasked_read_perm: Unmasked read permission ACE, e.g. "u:demo_admin"
         """
         params = {"path": table_path, "cfname": cf_name}
         if read_perm:
             params["readperm"] = read_perm
         if write_perm:
             params["writeperm"] = write_perm
+        if unmasked_read_perm:
+            params["unmaskedreadperm"] = unmasked_read_perm
         return self._post("/rest/table/cf/edit", params=params)
 
     # ─── Dynamic Data Masking ────────────────────────────────────────────
