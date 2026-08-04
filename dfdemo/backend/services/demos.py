@@ -212,7 +212,8 @@ def check_prerequisites() -> list[Prerequisite]:
         ))
 
     # 3b. Check if demo users have cluster permissions (via REST API)
-    for username, perms in [(DEMO_USER_ADMIN, "admin"), (DEMO_USER_RESTRICTED, "login")]:
+    # Valid cluster permissions: login, ss, cv, cp, a (admin), fc, cip, aip, cir, air
+    for username, perms in [(DEMO_USER_ADMIN, "a"), (DEMO_USER_RESTRICTED, "login")]:
         acl_result = mapr_api.get_cluster_acl()
         has_perms = False
         if acl_result.get("status") == "OK":
@@ -228,7 +229,7 @@ def check_prerequisites() -> list[Prerequisite]:
                 user_field = acl_data.get("user", "")
             # ACL format: "user1:perm1,user2:perm2"
             has_perms = f"{username}:{perms}" in user_field or f"{username}:admin" in user_field
-        perm_desc = "admin (create volume, manage tables)" if perms == "admin" else "login (read access)"
+        perm_desc = "admin (create volume, manage tables)" if perms == "a" else "login (read access)"
         results.append(Prerequisite(
             name=f"cluster_perm_{username}",
             description=f"User '{username}' has cluster permissions ({perm_desc})",
@@ -319,7 +320,7 @@ def setup_prerequisite(prereq_name: str) -> CommandResult:
     # Handle cluster permission setup via REST API
     if prereq_name.startswith("cluster_perm_"):
         username = prereq_name.replace("cluster_perm_", "")
-        perms = "admin" if username == DEMO_USER_ADMIN else "login"
+        perms = "a" if username == DEMO_USER_ADMIN else "login"
         result = mapr_api.set_cluster_acl(user=f"{username}:{perms}")
         status = result.get("status", "ERROR")
         api_desc = f"POST /rest/acl/set?type=cluster&user={username}:{perms}"
