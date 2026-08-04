@@ -316,24 +316,51 @@ def setup_prerequisite(prereq_name: str) -> CommandResult:
                 success=False,
             )
 
-    # Handle table creation via REST API
+    # Handle table creation via SSH (maprcli handles volume mount paths correctly)
     if prereq_name == "demo_table":
-        result = mapr_api.create_table(DEMO_TABLE_PATH, "json", "p")
-        status = result.get("status", "ERROR")
-        if status == "OK":
+        # First ensure the volume is mounted by checking the mount point
+        cluster_host = ssh_service.hostname
+        mount_check_cmd = f"ls /mapr/{cluster_host}{DEMO_VOLUME_PATH} 2>/dev/null"
+        mount_out, mount_err, mount_code = ssh_service.execute(mount_check_cmd)
+
+        if mount_code != 0:
+            # Volume not mounted yet - try to mount it
+            mount_cmd = f"/opt/mapr/bin/maprcli volume mount -name {DEMO_VOLUME_NAME}"
+            mount_out2, mount_err2, mount_code2 = ssh_service.execute(mount_cmd)
+            if mount_code2 != 0:
+                # Try waiting a moment and checking again (auto-mount may be in progress)
+                import time
+                time.sleep(2)
+                mount_out, mount_err, mount_code = ssh_service.execute(mount_check_cmd)
+
+        # Now create the table using maprcli
+        table_cmd = f"/opt/mapr/bin/maprcli table create -path {DEMO_TABLE_PATH} -tabletype json -defaultreadperm p"
+        out, err, code = ssh_service.execute(table_cmd)
+
+        if code == 0:
             return CommandResult(
-                command=f"POST /rest/table/create?path={DEMO_TABLE_PATH}&tabletype=json&defaultreadperm=p",
-                stdout=f"Table '{DEMO_TABLE_NAME}' created successfully at path '{DEMO_TABLE_PATH}'\n\nAPI Response: {json.dumps(result, indent=2)}",
+                command=table_cmd,
+                stdout=f"Table '{DEMO_TABLE_NAME}' created successfully at path '{DEMO_TABLE_PATH}'\n\nOutput: {out}",
                 stderr="",
                 exit_code=0,
                 success=True,
             )
         else:
+            # Fallback: try REST API
+            result = mapr_api.create_table(DEMO_TABLE_PATH, "json", "p")
+            if result.get("status") == "OK":
+                return CommandResult(
+                    command=f"POST /rest/table/create?path={DEMO_TABLE_PATH}&tabletype=json&defaultreadperm=p",
+                    stdout=f"Table '{DEMO_TABLE_NAME}' created successfully (via REST API)\n\nAPI Response: {json.dumps(result, indent=2)}",
+                    stderr="",
+                    exit_code=0,
+                    success=True,
+                )
             errors = result.get("errors", [])
-            error_msg = "; ".join([e.get("msg", str(e)) for e in errors]) if errors else str(result)
+            error_msg = "; ".join([e.get("desc", e.get("msg", str(e))) for e in errors]) if errors else str(result)
             return CommandResult(
-                command=f"POST /rest/table/create?path={DEMO_TABLE_PATH}&tabletype=json&defaultreadperm=p",
-                stdout="",
+                command=f"{table_cmd}\n(fallback) POST /rest/table/create?path={DEMO_TABLE_PATH}&tabletype=json&defaultreadperm=p",
+                stdout=f"SSH output: {out}\nSSH stderr: {err}",
                 stderr=f"Table creation failed: {error_msg}\n\nFull API Response: {json.dumps(result, indent=2)}",
                 exit_code=1,
                 success=False,

@@ -138,22 +138,20 @@ class MapRAPI:
         return self._post("/rest/table/create", params=params)
 
     def table_exists(self, path: str) -> bool:
-        """Check if a table exists by listing tables on the volume."""
-        # Extract volume name from path (e.g., /secgovol/customer_data -> secgovol)
-        parts = path.strip("/").split("/")
-        if len(parts) < 2:
-            return False
-        volume_name = parts[0]
-        # List tables on the specific volume
-        result = self._get("/rest/table/list", params={"volume": volume_name, "limit": 500})
+        """Check if a table exists using table info endpoint."""
+        # Try the table info endpoint first (more reliable across versions)
+        result = self._get("/rest/table/info", params={"path": path})
         if result.get("status") == "OK":
-            tables = result.get("data", [])
-            return any(t.get("tablename") == path or t.get("path") == path for t in tables)
-        # Fallback: try without volume param
-        result2 = self._get("/rest/table/list", params={"limit": 500})
+            return True
+        # Fallback: try table/list without params
+        result2 = self._get("/rest/table/list")
         if result2.get("status") == "OK":
             tables = result2.get("data", [])
-            return any(t.get("tablename") == path or t.get("path") == path for t in tables)
+            return any(
+                t.get("tablename") == path or t.get("path") == path or
+                t.get("tablename", "").endswith(path.split("/")[-1])
+                for t in tables
+            )
         return False
 
     def list_tables(self) -> dict:
