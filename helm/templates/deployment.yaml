@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mapr-sandbox.fullname" . }}
+  labels:
+    {{- include "mapr-sandbox.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "mapr-sandbox.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "mapr-sandbox.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "mapr-sandbox.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: isSecure
+              value: "true"
+            - name: MAPR_TZ
+              value: "Europe/London"
+            - name: TZ
+              value: "Europe/London"
+            - name: MAPR_EXTERNAL
+              value: {{ .Values.ezua.virtualService.endpoint | required ".Values.ezua.virtualService.endpoint is required !\n" | regexReplaceAll "^https?://+" "" | regexReplaceAll "/.*$" "" | regexReplaceAll ":.*$" "" }}
+          ports:
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            # - name: zkdata
+            #   mountPath: /opt/mapr/zkdata
+            # - name: logs
+            #   mountPath: /opt/mapr/logs
+            # - name: disks
+            #   mountPath: /opt/mapr/disks
+            # - name: mapr-emptydir
+            #   mountPath: /mapr
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        # - name: zkdata
+        #   persistentVolumeClaim:
+        #     claimName: {{ include "mapr-sandbox.fullname" . }}-zkdata
+        # - name: logs
+        #   persistentVolumeClaim:
+        #     claimName: {{ include "mapr-sandbox.fullname" . }}-logs
+        # - name: disks
+        #   persistentVolumeClaim:
+        #     claimName: {{ include "mapr-sandbox.fullname" . }}-disks
+        # - name: mapr-emptydir
+        #   emptyDir: {}
+        {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

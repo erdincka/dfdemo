@@ -1,0 +1,102 @@
+ezua:
+  virtualService:
+    endpoint: "dfdemo.${DOMAIN_NAME}"
+    istioGateway: "istio-system/ezaf-gateway"
+
+replicaCount: 1
+
+image:
+  repository: erdincka/mapr-sandbox
+  pullPolicy: Always
+  tag: "8.1.0"
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template.
+  name: ""
+
+podAnnotations: {}
+
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext:
+  privileged: true
+  capabilities:
+    add:
+      - SYS_ADMIN
+      - NET_ADMIN
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8443
+  targetPort: 8443
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  storageClass: ""
+  annotations: {}
+  zkdata:
+    size: 10Gi
+  logs:
+    size: 10Gi
+  disks:
+    size: 100Gi
+
+resources:
+  limits:
+    cpu: 20
+    memory: 48Gi
+  requests:
+    cpu: 16
+    memory: 32Gi
+
+livenessProbe:
+  tcpSocket:
+    port: 22
+  periodSeconds: 20
+readinessProbe:
+  httpGet:
+    path: /
+    port: 8443
+    scheme: HTTPS
+  failureThreshold: 30 # 30 tries * 20 seconds = 600 seconds total delay
+  periodSeconds: 20
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+volumes: []
+  # - name: foo
+  #   secret:
+  #     secretName: mysecret
+  #     optional: false
+
+volumeMounts: []
+  # - name: foo
+  #   mountPath: "/etc/foo"
+  #   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

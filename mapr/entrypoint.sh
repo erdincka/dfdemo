@@ -4,8 +4,13 @@ echo "[ $(date) ] Starting container configuration, watch logs and be patient, t
 
 # Remove the while loop at the end so we can continue with the rest of the default init-script
 sed -i '1,/This container IP/!d' /usr/bin/init-script
-echo "[ $(date) ] Data Fabric configuring, this will take some time..."
-/usr/bin/init-script 2>&1 > /root/configure-$(date +%Y%m%d_%H%M%S).log
+# Fix issues in the init-script before it is run
+echo "[ $(date) ] Fixing init-script for compatibility with latest MapR version..."
+/sbin/rpc.statd
+/opt/mapr/server/disksetup -F /root/disk.list
+
+echo "[ $(date) ] Data Fabric initialising, this will take some time..."
+sudo /usr/bin/init-script 2>&1 > /root/mapr-init-$(date +%Y%m%d_%H%M%S).log
 echo "[ $(date) ] Data Fabric configuration is complete, preparing for demo..."
 
 # Obtain ticket for mapr user
@@ -34,18 +39,19 @@ secretKey = ${secret_key}
 """ > /home/mapr/.aws/credentials
 chown -R mapr:mapr /home/mapr/.aws/
 
-echo "[ $(date) ] Mounting /mapr"
-# /sbin/rpc.statd
-mount -t nfs localhost:/mapr /mapr
-# mount -t nfs -o vers=4,proto=tcp,nolock,sec=sys mapr:/mapr /mapr
+# echo "[ $(date) ] Mounting /mapr"
+# # /sbin/rpc.statd
+# [ -d /mapr ] || mkdir /mapr
+# mount -t nfs -o nolock localhost:/mapr /mapr
+# # mount -t nfs -o vers=4,proto=tcp,nolock,sec=sys mapr:/mapr /mapr
 
 echo "[ $(date) ] Setting up mc alias for S3"
 /opt/mapr/bin/mc alias set df https://maprdemo.mapr.io:9000 $access_key $secret_key
 
-echo "[ $(date) ] Creating demo volume, bucket, and stream"
-maprcli volume create -name demovol -path /demovol -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
-maprcli stream create -path /demovol/demostream -ttl 86400 -produceperm p -consumeperm p -topicperm p
-/opt/mapr/bin/mc mb df/demobucket
+# echo "[ $(date) ] Creating demo volume, bucket, and stream"
+# maprcli volume create -name demovol -path /demovol -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
+# maprcli stream create -path /demovol/demostream -ttl 86400 -produceperm p -consumeperm p -topicperm p
+# /opt/mapr/bin/mc mb df/demobucket
 
 # Create volumes for fraud demo
 # maprcli volume create -name fraud -path /demovol/fraud -replication 1 -minreplication 1 -nsreplication 1 -nsminreplication 1 -dare false -tieringenable false 
@@ -76,9 +82,9 @@ maprcli stream create -path /demovol/demostream -ttl 86400 -produceperm p -consu
 # mkdir /mapr/maprdemo.mapr.io/tenant1/user12; chown user12:tenant1 /mapr/maprdemo.mapr.io/tenant1/user12
 # mkdir /mapr/maprdemo.mapr.io/tenant2/user21; chown user21:tenant2 /mapr/maprdemo.mapr.io/tenant2/user21
 
-# Ensure folder exists for Iceberg table
-/opt/mapr/bin/mc mb df/demobucket/iceberg/
-/opt/mapr/bin/mc policy set public df/demobucket/iceberg;
+# # Ensure folder exists for Iceberg table
+# /opt/mapr/bin/mc mb df/demobucket/iceberg/
+# /opt/mapr/bin/mc policy set public df/demobucket/iceberg;
 # Create Iceberg table on S3 bucket
 # TODO: Fix this
 # /opt/mapr/spark/spark-3.5.5/bin/pyspark \
@@ -87,7 +93,7 @@ maprcli stream create -path /demovol/demostream -ttl 86400 -produceperm p -consu
 
 echo "[ $(date) ] CREDENTIALS:"
 # echo "Hive Credentials: hive/Admin123."
-echo "NiFi: ${NIFI_USER}/${NIFI_PASSWORD}"
+# echo "NiFi: ${NIFI_USER}/${NIFI_PASSWORD}"
 echo "Cluster Admin: mapr/mapr"
 echo "S3 Access Key: ${access_key}"
 echo "S3 Secret Key: ${secret_key}"

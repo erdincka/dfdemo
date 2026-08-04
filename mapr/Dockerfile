@@ -1,4 +1,4 @@
-FROM maprtech/dev-sandbox-container:8.0.0_10.0.0_ubuntu22
+FROM maprtech/dev-sandbox-container:8.1.0_10.1.0_ubuntu22
 
 LABEL org.opencontainers.image.ref.name=ubuntu
 LABEL org.opencontainers.image.version=22.04
@@ -25,28 +25,28 @@ ENV SHELL=/bin/bash \
 RUN locale-gen $LC_ALL
 
 RUN apt update && apt upgrade -y
-RUN apt install -y \
-    mapr-drill \
-    mapr-spark \
-    mapr-spark-thriftserver \
-    mysql-client
+# RUN apt install -y mysql-client \
 # mapr-nifi \
-
+# mapr-drill \
+# mapr-spark \
+# mapr-spark-thriftserver \
 # mapr-hue \
 # mapr-airflow \
 # mapr-collectd \
 # mapr-opentsdb \
 # mapr-grafana \
+
 # RUN apt remove -y mapr-nfs && apt install -y mapr-nfs4server
 
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/
 
-# Possible services to expose, WebUI, App, SSH, Drill, Airflow, NiFi, Grafana, Hue ## TODO: add spark-historyserver
-EXPOSE 8443 8501 22 8047 8780 3000 8888 
+# Possible services to expose, WebUI, SSH, Drill, Airflow, NiFi, Grafana, Hue ## TODO: add spark-historyserver
+EXPOSE 8443 22 8047 8780 3000 8888 
 # 12443
 
 # fix init-script
-# RUN sed -i '/after cldb /a while [[ ! -f /tmp/maprticket_0 ]]; do (echo mapr | maprlogin password -user mapr); sleep 1; done' /usr/bin/init-script
+RUN sed -i '/after cldb /a while [[ ! -f /tmp/maprticket_0 ]]; do (echo mapr | maprlogin password -user mapr); sleep 1; done' /usr/bin/init-script
+RUN sed -i 's/3.3.2/3.5.5/g' /usr/bin/init-script
 
 # Add CDC support to NiFi
 # RUN wget -P /opt/mapr/nifi/nifi-"${NIFI_VERSION}"/extensions https://repo1.maven.org/maven2/org/apache/nifi/nifi-cdc-mysql-nar/"${NIFI_VERSION}"/nifi-cdc-mysql-nar-"${NIFI_VERSION}".nar
@@ -57,11 +57,11 @@ EXPOSE 8443 8501 22 8047 8780 3000 8888
 # RUN dpkg -i "./mysql-connector-j_${MYSQL_CONNECTOR_VERSION}-1ubuntu${UBUNTU_VERSION}_all.deb"
 
 # Set up files/scripts
-COPY ./mysql.cnf /etc/mysql/conf.d/client.cnf
+# COPY ./mysql.cnf /etc/mysql/conf.d/client.cnf
 COPY entrypoint.sh /
-COPY create_iceberg_table.py /home/mapr/
-COPY invoke-pyspark.sh /home/mapr/
-COPY ingest_to_iceberg.py /home/mapr/
+# COPY create_iceberg_table.py /home/mapr/
+# COPY invoke-pyspark.sh /home/mapr/
+# COPY ingest_to_iceberg.py /home/mapr/
 
 # Cleanup
 # RUN rm "./mysql-connector-j_${MYSQL_CONNECTOR_VERSION}-1ubuntu${UBUNTU_VERSION}_all.deb"

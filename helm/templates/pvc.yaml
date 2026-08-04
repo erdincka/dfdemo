@@ -1,0 +1,55 @@
+{{- if .Values.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "mapr-sandbox.fullname" . }}-zkdata
+  labels:
+    {{- include "mapr-sandbox.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.persistence.annotations | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.zkdata.size }}
+  {{- if .Values.persistence.storageClass }}
+  storageClassName: {{ .Values.persistence.storageClass }}
+  {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "mapr-sandbox.fullname" . }}-logs
+  labels:
+    {{- include "mapr-sandbox.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.persistence.annotations | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.logs.size }}
+  {{- if .Values.persistence.storageClass }}
+  storageClassName: {{ .Values.persistence.storageClass }}
+  {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "mapr-sandbox.fullname" . }}-disks
+  labels:
+    {{- include "mapr-sandbox.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.persistence.annotations | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.disks.size }}
+  {{- if .Values.persistence.storageClass }}
+  storageClassName: {{ .Values.persistence.storageClass }}
+  {{- end }}
+{{- end }}

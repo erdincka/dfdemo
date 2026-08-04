@@ -29,7 +29,6 @@ services:
       # Following password needs to be min 12 chars
       - NIFI_PASSWORD=Admin123.Admin123.
     ports:
-      # - "8501:8501"  ## if there is an app UI
       # - "9443:9443"  ## optional for Installer UI
       - "8443:8443" ## optional for MCS
       # - "2222:22"  ## optional for SSH

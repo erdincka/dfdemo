@@ -1,0 +1,13 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: {{ printf "%s-%s-tls-origination" .Release.Name .Chart.Name }}
+spec:
+  host: "{{ include "mapr-sandbox.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local"
+  trafficPolicy:
+    portLevelSettings:
+      - port:
+          number: 8443
+        tls:
+          mode: SIMPLE
+          insecureSkipVerify: true
