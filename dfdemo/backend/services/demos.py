@@ -216,15 +216,25 @@ def check_prerequisites() -> list[Prerequisite]:
     for username, perms in [(DEMO_USER_ADMIN, "a"), (DEMO_USER_RESTRICTED, "login")]:
         acl_result = mapr_api.get_cluster_acl()
         has_perms = False
+        acl_str = json.dumps(acl_result)
+        logger.info("Cluster ACL response for %s check: %s", username, acl_str[:500])
         if acl_result.get("status") == "OK":
             # Search the entire response for the user:permission pattern
             # This handles various response formats (data as list, dict, or nested)
-            acl_str = json.dumps(acl_result)
             has_perms = (
                 f"{username}:{perms}" in acl_str or
                 f"{username}:admin" in acl_str or
-                f'"{username}"' in acl_str  # user might appear in a different format
+                f"{username}" in acl_str  # user appears anywhere in response
             )
+            # If data is empty but status is OK, the ACL might not be returned
+            # In this case, try verifying via SSH with maprcli acl show
+            if not has_perms:
+                out, err, code = ssh_service.execute(
+                    f"/opt/mapr/bin/maprcli acl show -type cluster 2>/dev/null | grep -i '{username}'"
+                )
+                if code == 0 and username in out:
+                    has_perms = True
+                    logger.info("Found %s in cluster ACL via SSH: %s", username, out[:200])
         perm_desc = "admin (create volume, manage tables)" if perms == "a" else "login (read access)"
         results.append(Prerequisite(
             name=f"cluster_perm_{username}",
