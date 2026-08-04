@@ -85,10 +85,29 @@ class MapRAPI:
         result = self._get("/rest/volume/list", params={"limit": 500})
         if result.get("status") == "OK":
             volumes = result.get("data", [])
-            return any(v.get("volumename") == volume_name or v.get("name") == volume_name for v in volumes)
+            for v in volumes:
+                # Check all possible field names for volume name
+                if (v.get("volumename") == volume_name or
+                    v.get("name") == volume_name or
+                    v.get("volumeName") == volume_name):
+                    return True
+            return False
         # Fallback: try volume/get endpoint
         result2 = self._get("/rest/volume/get", params={"name": volume_name})
-        return result2.get("status") == "OK"
+        if result2.get("status") == "OK":
+            return True
+        # If we get an error about volume not found, it doesn't exist
+        errors = result2.get("errors", [])
+        for e in errors:
+            desc = e.get("desc", e.get("msg", ""))
+            if "not found" in desc.lower() or "does not exist" in desc.lower():
+                return False
+        # If we got a different error (like permission), assume it might exist
+        return False
+
+    def mount_volume(self, volume_name: str) -> dict:
+        """Mount a volume."""
+        return self._post("/rest/volume/mount", params={"name": volume_name})
 
     def create_volume(
         self,
