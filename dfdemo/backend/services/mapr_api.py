@@ -227,6 +227,26 @@ class MapRAPI:
         # This is typically done via SSH, but we keep it here for API completeness
         return False  # Will be implemented via SSH in the demo logic
 
+    # ─── ACL Operations ─────────────────────────────────────────────────
+
+    def get_cluster_acl(self) -> dict:
+        """Get cluster-level ACL."""
+        return self._get("/rest/acl/show", params={"type": "cluster"})
+
+    def set_cluster_acl(self, user: str = None, group: str = None) -> dict:
+        """Set cluster-level ACL permissions.
+        
+        Args:
+            user: Format "username:permission" e.g. "demo_admin:admin"
+            group: Format "groupname:permission" e.g. "demogroup:login"
+        """
+        params = {"type": "cluster"}
+        if user:
+            params["user"] = user
+        if group:
+            params["group"] = group
+        return self._post("/rest/acl/set", params=params)
+
     # ─── ACE Operations ──────────────────────────────────────────────────
 
     def set_volume_ace(self, volume_name: str, read_ace: str = None, write_ace: str = None) -> dict:

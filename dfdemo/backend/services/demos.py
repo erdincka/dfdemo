@@ -211,12 +211,16 @@ def check_prerequisites() -> list[Prerequisite]:
             ) if not exists else None,
         ))
 
-    # 3b. Check if demo users have cluster permissions
+    # 3b. Check if demo users have cluster permissions (via REST API)
     for username, perms in [(DEMO_USER_ADMIN, "admin"), (DEMO_USER_RESTRICTED, "login")]:
-        out, err, code = ssh_service.execute(
-            f"/opt/mapr/bin/maprcli acl show -type cluster -user {username} 2>/dev/null"
-        )
-        has_perms = code == 0 and username in out
+        acl_result = mapr_api.get_cluster_acl()
+        has_perms = False
+        if acl_result.get("status") == "OK":
+            # Check if user appears in the cluster ACL with appropriate permission
+            acl_data = acl_result.get("data", {})
+            user_field = acl_data.get("user", "")
+            # ACL format: "user1:perm1,user2:perm2"
+            has_perms = f"{username}:{perms}" in user_field or f"{username}:admin" in user_field
         perm_desc = "admin (create volume, manage tables)" if perms == "admin" else "login (read access)"
         results.append(Prerequisite(
             name=f"cluster_perm_{username}",
@@ -224,7 +228,7 @@ def check_prerequisites() -> list[Prerequisite]:
             status=PrerequisiteStatus.PASS if has_perms else PrerequisiteStatus.FAIL,
             message=f"{username} {'has' if has_perms else 'does not have'} cluster {perms} permission",
             fix_command=(
-                f"/opt/mapr/bin/maprcli acl add -type cluster -user {username}:{perms}"
+                f"POST /rest/acl/set?type=cluster&user={username}:{perms}"
             ) if not has_perms else None,
         ))
 
@@ -304,6 +308,32 @@ def setup_prerequisite(prereq_name: str) -> CommandResult:
             exit_code=0,
             success=True,
         )
+
+    # Handle cluster permission setup via REST API
+    if prereq_name.startswith("cluster_perm_"):
+        username = prereq_name.replace("cluster_perm_", "")
+        perms = "admin" if username == DEMO_USER_ADMIN else "login"
+        result = mapr_api.set_cluster_acl(user=f"{username}:{perms}")
+        status = result.get("status", "ERROR")
+        api_desc = f"POST /rest/acl/set?type=cluster&user={username}:{perms}"
+        if status == "OK":
+            return CommandResult(
+                command=api_desc,
+                stdout=f"Cluster permission '{perms}' granted to '{username}' successfully.\n\nAPI Response: {json.dumps(result, indent=2)}",
+                stderr="",
+                exit_code=0,
+                success=True,
+            )
+        else:
+            errors = result.get("errors", [])
+            error_msg = "; ".join([e.get("desc", e.get("msg", str(e))) for e in errors]) if errors else str(result)
+            return CommandResult(
+                command=api_desc,
+                stdout="",
+                stderr=f"Failed to set cluster permission: {error_msg}\n\nFull API Response: {json.dumps(result, indent=2)}",
+                exit_code=1,
+                success=False,
+            )
 
     # Handle volume creation via REST API (more reliable than maprcli over SSH)
     if prereq_name == "demo_volume":
