@@ -37,22 +37,23 @@ def get_demo_info() -> DemoInfo:
     )
 
 
+def _get_mapr_mount_path() -> str:
+    """Get the MapR mount path by reading cluster name from mapr-clusters.conf."""
+    # Read cluster name from /opt/mapr/conf/mapr-clusters.conf
+    # Format: <cluster_name> secure=true <hostname>:7222
+    # The hostname in the file matches the SSH host we're connected to
+    out, err, code = ssh_service.execute(
+        f"grep '{ssh_service.hostname}' /opt/mapr/conf/mapr-clusters.conf 2>/dev/null | awk '{{print $1}}'"
+    )
+    cluster_name = out.strip() if code == 0 and out.strip() else ssh_service.hostname
+    return f"/mapr/{cluster_name}"
+
+
 def get_demo_steps() -> list[DemoStep]:
     """Return the ordered steps for the Security & Governance demo."""
     return [
         DemoStep(
             id=1,
-            title="Create JSON Document Table",
-            description=(
-                "Create a JSON document database table called 'customer_data' on the volume. "
-                "This table will store customer records including PII fields."
-            ),
-            command=f"/opt/mapr/bin/maprcli table create -path {DEMO_TABLE_PATH} -tabletype json -defaultreadperm p",
-            api_call=f"POST /rest/table/create?path={DEMO_TABLE_PATH}&tabletype=json&defaultreadperm=p",
-            expected_result="Table created successfully",
-        ),
-        DemoStep(
-            id=2,
             title="Insert Sample Data with PII",
             description=(
                 "Insert mock customer records containing PII fields: name, email, birthdate, "
@@ -63,24 +64,28 @@ def get_demo_steps() -> list[DemoStep]:
             expected_result="Documents inserted successfully",
         ),
         DemoStep(
-            id=3,
+            id=2,
             title="Apply Dynamic Data Masking Rules",
             description=(
-                "Set DDM rules on PII columns. The 'email' field will use mrddm_email mask "
-                "(shows first char + domain), and 'ssn' will use mrddm_ssn (shows last 4). "
-                "The admin user retains unmasked read access."
+                "Set DDM rules on PII columns: email (mrddm_email), ssn (mrddm_last4), "
+                "creditcard (mrddm_first6last4), salary (mrddm_redact). "
+                "Then grant 'unmaskedread' permission to the admin user on the column family."
             ),
             command=None,
             api_call=(
                 f"POST /rest/table/cf/column/datamask/set?path={DEMO_TABLE_PATH}"
                 "&cfname=default&name=email&datamask=mrddm_email\n"
                 f"POST /rest/table/cf/column/datamask/set?path={DEMO_TABLE_PATH}"
-                "&cfname=default&name=ssn&datamask=mrddm_ssn"
+                "&cfname=default&name=ssn&datamask=mrddm_last4\n"
+                f"POST /rest/table/cf/column/datamask/set?path={DEMO_TABLE_PATH}"
+                "&cfname=default&name=creditcard&datamask=mrddm_first6last4\n"
+                f"POST /rest/table/cf/column/datamask/set?path={DEMO_TABLE_PATH}"
+                "&cfname=default&name=salary&datamask=mrddm_redact"
             ),
-            expected_result="DDM rules applied to email and ssn columns",
+            expected_result="DDM rules applied to PII columns",
         ),
         DemoStep(
-            id=4,
+            id=3,
             title="View Data as Admin (Unmasked)",
             description=(
                 "Read the table as the admin user who has 'unmaskedread' permission. "
@@ -91,7 +96,7 @@ def get_demo_steps() -> list[DemoStep]:
             expected_result="All fields visible without masking",
         ),
         DemoStep(
-            id=5,
+            id=4,
             title="View Data as Restricted User (Masked)",
             description=(
                 "Read the same table as the restricted user who only has 'read' permission. "
@@ -99,36 +104,36 @@ def get_demo_steps() -> list[DemoStep]:
             ),
             command=None,
             api_call=f"GET /api/v2/table/{DEMO_TABLE_PATH} (as {DEMO_USER_RESTRICTED})",
-            expected_result="email and ssn fields are masked",
+            expected_result="email, ssn, creditcard, salary fields are masked",
         ),
         DemoStep(
-            id=6,
+            id=5,
             title="Test Volume Write Access (Admin)",
             description=(
                 "Write a file to the volume as the admin user. This should succeed because "
                 "the admin user has write ACE on the volume."
             ),
-            command=f"sudo -u {DEMO_USER_ADMIN} bash -c 'echo \"test data from admin\" > /mapr/$(hostname -f)/{DEMO_VOLUME_PATH}/admin_test.txt && cat /mapr/$(hostname -f)/{DEMO_VOLUME_PATH}/admin_test.txt'",
+            command=f"sudo -u {DEMO_USER_ADMIN} bash -c 'echo \"test data from admin\" > <mapr_mount>{DEMO_VOLUME_PATH}/admin_test.txt && cat <mapr_mount>{DEMO_VOLUME_PATH}/admin_test.txt'",
             expected_result="File created and content displayed",
         ),
         DemoStep(
-            id=7,
+            id=6,
             title="Test Volume Write Access (Restricted - Should Fail)",
             description=(
                 "Attempt to write a file as the restricted user. This should FAIL with "
                 "'Permission denied' because the restricted user only has read ACE."
             ),
-            command=f"sudo -u {DEMO_USER_RESTRICTED} bash -c 'echo \"test data from analyst\" > /mapr/$(hostname -f)/{DEMO_VOLUME_PATH}/analyst_test.txt'",
+            command=f"sudo -u {DEMO_USER_RESTRICTED} bash -c 'echo \"test data from analyst\" > <mapr_mount>{DEMO_VOLUME_PATH}/analyst_test.txt'",
             expected_result="Permission denied error",
         ),
         DemoStep(
-            id=8,
+            id=7,
             title="Test Volume Read Access (Restricted - Should Succeed)",
             description=(
                 "Read the file created by admin as the restricted user. This should succeed "
                 "because the restricted user has read ACE on the volume."
             ),
-            command=f"sudo -u {DEMO_USER_RESTRICTED} bash -c 'cat /mapr/$(hostname -f)/{DEMO_VOLUME_PATH}/admin_test.txt'",
+            command=f"sudo -u {DEMO_USER_RESTRICTED} bash -c 'cat <mapr_mount>{DEMO_VOLUME_PATH}/admin_test.txt'",
             expected_result="File content displayed successfully",
         ),
     ]
@@ -492,20 +497,18 @@ def run_step(step_id: int, params: dict = None) -> CommandResult:
         )
 
     if step_id == 1:
-        return _step_create_table()
-    elif step_id == 2:
         return _step_insert_data(params)
-    elif step_id == 3:
+    elif step_id == 2:
         return _step_apply_ddm()
-    elif step_id == 4:
+    elif step_id == 3:
         return _step_read_as_admin()
-    elif step_id == 5:
+    elif step_id == 4:
         return _step_read_as_restricted()
-    elif step_id == 6:
+    elif step_id == 5:
         return _step_write_as_admin()
-    elif step_id == 7:
+    elif step_id == 6:
         return _step_write_as_restricted()
-    elif step_id == 8:
+    elif step_id == 7:
         return _step_read_file_as_restricted()
     else:
         return CommandResult(
@@ -517,31 +520,8 @@ def run_step(step_id: int, params: dict = None) -> CommandResult:
         )
 
 
-def _step_create_table() -> CommandResult:
-    """Step 1: Create the JSON document table."""
-    cmd = f"/opt/mapr/bin/maprcli table create -path {DEMO_TABLE_PATH} -tabletype json -defaultreadperm p"
-    out, err, code = ssh_service.execute(cmd)
-
-    # Also try via API for visibility
-    api_result = mapr_api.create_table(DEMO_TABLE_PATH, "json", "p")
-
-    combined_out = f"Command: {cmd}\nOutput: {out}\n"
-    if api_result.get("status") == "OK":
-        combined_out += f"API Result: Table created successfully\n"
-    else:
-        combined_out += f"API Result: {json.dumps(api_result, indent=2)}\n"
-
-    return CommandResult(
-        command=cmd,
-        stdout=combined_out,
-        stderr=err,
-        exit_code=code,
-        success=code == 0 or api_result.get("status") == "OK",
-    )
-
-
 def _step_insert_data(params: dict = None) -> CommandResult:
-    """Step 2: Insert sample data with PII."""
+    """Step 1: Insert sample data with PII."""
     count = (params or {}).get("count", 5)
     records = generate_sample_data(count)
 
@@ -570,13 +550,13 @@ def _step_insert_data(params: dict = None) -> CommandResult:
 
 
 def _step_apply_ddm() -> CommandResult:
-    """Step 3: Apply Dynamic Data Masking rules."""
+    """Step 2: Apply Dynamic Data Masking rules and set unmaskedread for admin."""
     results = []
     masks_to_apply = [
         ("email", "mrddm_email"),
-        ("ssn", "mrddm_ssn"),
-        ("birthdate", "mrddm_date"),
-        ("creditcard", "mrddm_last4"),
+        ("ssn", "mrddm_last4"),
+        ("creditcard", "mrddm_first6last4"),
+        ("salary", "mrddm_redact"),
     ]
 
     all_success = True
@@ -587,12 +567,20 @@ def _step_apply_ddm() -> CommandResult:
         if status != "OK":
             all_success = False
 
+    # Grant unmaskedread permission to admin user on the default column family
+    # This allows demo_admin to see all data without masking
+    unmask_result = mapr_api.set_cf_permission(DEMO_TABLE_PATH, "default", read_perm=f"u:{DEMO_USER_ADMIN}:unmaskedread")
+    unmask_status = unmask_result.get("status", "ERROR")
+    results.append(f"  unmaskedread for {DEMO_USER_ADMIN}: {unmask_status}")
+    if unmask_status != "OK":
+        all_success = False
+
     out = f"Applied DDM rules to {DEMO_TABLE_PATH}:\n" + "\n".join(results)
-    out += "\n\nNote: The admin user has 'unmaskedread' permission and will see all data unmasked."
-    out += f"\nThe restricted user ({DEMO_USER_RESTRICTED}) has only 'read' permission and will see masked data."
+    out += f"\n\nNote: '{DEMO_USER_ADMIN}' has 'unmaskedread' permission and will see all data unmasked."
+    out += f"\n'{DEMO_USER_RESTRICTED}' has only 'read' permission and will see masked data."
 
     return CommandResult(
-        command="POST /rest/table/cf/column/datamask/set (multiple)",
+        command="POST /rest/table/cf/column/datamask/set (multiple) + cf permission",
         stdout=out,
         stderr="" if all_success else "Some masks failed to apply",
         exit_code=0 if all_success else 1,
@@ -601,7 +589,7 @@ def _step_apply_ddm() -> CommandResult:
 
 
 def _step_read_as_admin() -> CommandResult:
-    """Step 4: Read table as admin user (unmasked)."""
+    """Step 3: Read table as admin user (unmasked)."""
     result = mapr_api.get_documents(DEMO_TABLE_PATH, DEMO_USER_ADMIN, DEMO_USER_PASSWORD)
 
     if "error" in result:
@@ -631,7 +619,7 @@ def _step_read_as_admin() -> CommandResult:
 
 
 def _step_read_as_restricted() -> CommandResult:
-    """Step 5: Read table as restricted user (masked)."""
+    """Step 4: Read table as restricted user (masked)."""
     result = mapr_api.get_documents(DEMO_TABLE_PATH, DEMO_USER_RESTRICTED, DEMO_USER_PASSWORD)
 
     if "error" in result:
@@ -661,11 +649,12 @@ def _step_read_as_restricted() -> CommandResult:
 
 
 def _step_write_as_admin() -> CommandResult:
-    """Step 6: Write a file as admin user."""
+    """Step 5: Write a file as admin user."""
+    mapr_mount = _get_mapr_mount_path()
     cmd = (
         f"echo '{ssh_service._password}' | sudo -S -u {DEMO_USER_ADMIN} bash -c '"
-        f"echo \"test data written by admin at $(date)\" > /mapr/$(hostname -f)/{DEMO_VOLUME_PATH}/admin_test.txt && "
-        f"cat /mapr/$(hostname -f)/{DEMO_VOLUME_PATH}/admin_test.txt'"
+        f"echo \"test data written by admin at $(date)\" > {mapr_mount}{DEMO_VOLUME_PATH}/admin_test.txt && "
+        f"cat {mapr_mount}{DEMO_VOLUME_PATH}/admin_test.txt'"
     )
     out, err, code = ssh_service.execute(cmd)
 
@@ -679,10 +668,11 @@ def _step_write_as_admin() -> CommandResult:
 
 
 def _step_write_as_restricted() -> CommandResult:
-    """Step 7: Attempt write as restricted user (should fail)."""
+    """Step 6: Attempt write as restricted user (should fail)."""
+    mapr_mount = _get_mapr_mount_path()
     cmd = (
         f"echo '{ssh_service._password}' | sudo -S -u {DEMO_USER_RESTRICTED} bash -c '"
-        f"echo \"test data written by analyst\" > /mapr/$(hostname -f)/{DEMO_VOLUME_PATH}/analyst_test.txt'"
+        f"echo \"test data written by analyst\" > {mapr_mount}{DEMO_VOLUME_PATH}/analyst_test.txt'"
     )
     out, err, code = ssh_service.execute(cmd)
 
@@ -708,10 +698,11 @@ def _step_write_as_restricted() -> CommandResult:
 
 
 def _step_read_file_as_restricted() -> CommandResult:
-    """Step 8: Read file as restricted user (should succeed)."""
+    """Step 7: Read file as restricted user (should succeed)."""
+    mapr_mount = _get_mapr_mount_path()
     cmd = (
         f"echo '{ssh_service._password}' | sudo -S -u {DEMO_USER_RESTRICTED} bash -c '"
-        f"cat /mapr/$(hostname -f)/{DEMO_VOLUME_PATH}/admin_test.txt'"
+        f"cat {mapr_mount}{DEMO_VOLUME_PATH}/admin_test.txt'"
     )
     out, err, code = ssh_service.execute(cmd)
 

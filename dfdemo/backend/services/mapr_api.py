@@ -215,6 +215,25 @@ class MapRAPI:
             logger.error("Document insert failed: %s", e)
             return {"status": "ERROR", "error": str(e)}
 
+    # ─── Column Family Permissions ──────────────────────────────────────
+
+    def set_cf_permission(self, table_path: str, cf_name: str = "default",
+                          read_perm: str = None, write_perm: str = None) -> dict:
+        """Set permissions on a column family.
+        
+        Args:
+            table_path: Path to the table
+            cf_name: Column family name (default: "default")
+            read_perm: Read permission ACE, e.g. "u:demo_admin:unmaskedread"
+            write_perm: Write permission ACE
+        """
+        params = {"path": table_path, "cfname": cf_name}
+        if read_perm:
+            params["readperm"] = read_perm
+        if write_perm:
+            params["writeperm"] = write_perm
+        return self._post("/rest/table/cf/edit", params=params)
+
     # ─── Dynamic Data Masking ────────────────────────────────────────────
 
     def list_datamasks(self) -> dict:
