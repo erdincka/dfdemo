@@ -206,8 +206,8 @@ def check_prerequisites() -> list[Prerequisite]:
             status=PrerequisiteStatus.PASS if exists else PrerequisiteStatus.FAIL,
             message=f"User {username} {'exists' if exists else 'does not exist'}",
             fix_command=(
-                f"sudo useradd -m -s /bin/bash {username} && "
-                f"echo '{username}:{DEMO_USER_PASSWORD}' | sudo chpasswd"
+                f"echo '{ssh_service._password}' | sudo -S useradd -m -s /bin/bash {username} 2>/dev/null && "
+                f"echo '{username}:{DEMO_USER_PASSWORD}' | sudo -S chpasswd 2>/dev/null"
             ) if not exists else None,
         ))
 
@@ -219,7 +219,7 @@ def check_prerequisites() -> list[Prerequisite]:
         description=f"Group '{DEMO_GROUP}' exists",
         status=PrerequisiteStatus.PASS if group_exists else PrerequisiteStatus.FAIL,
         message=f"Group {DEMO_GROUP} {'exists' if group_exists else 'does not exist'}",
-        fix_command=f"sudo groupadd {DEMO_GROUP}" if not group_exists else None,
+        fix_command=f"echo '{ssh_service._password}' | sudo -S groupadd {DEMO_GROUP} 2>/dev/null" if not group_exists else None,
     ))
 
     # 5. Check if volume exists
@@ -259,7 +259,7 @@ def check_prerequisites() -> list[Prerequisite]:
                 description=f"User '{username}' is member of '{DEMO_GROUP}'",
                 status=PrerequisiteStatus.PASS if in_group else PrerequisiteStatus.FAIL,
                 message=f"{username} {'is' if in_group else 'is not'} in {DEMO_GROUP}",
-                fix_command=f"sudo usermod -aG {DEMO_GROUP} {username}" if not in_group else None,
+                fix_command=f"echo '{ssh_service._password}' | sudo -S usermod -aG {DEMO_GROUP} {username} 2>/dev/null" if not in_group else None,
             ))
 
     return results
@@ -492,7 +492,7 @@ def _step_read_as_restricted() -> CommandResult:
 def _step_write_as_admin() -> CommandResult:
     """Step 6: Write a file as admin user."""
     cmd = (
-        f"sudo -u {DEMO_USER_ADMIN} bash -c '"
+        f"echo '{ssh_service._password}' | sudo -S -u {DEMO_USER_ADMIN} bash -c '"
         f"echo \"test data written by admin at $(date)\" > /mapr/$(hostname -f)/{DEMO_VOLUME_PATH}/admin_test.txt && "
         f"cat /mapr/$(hostname -f)/{DEMO_VOLUME_PATH}/admin_test.txt'"
     )
@@ -510,7 +510,7 @@ def _step_write_as_admin() -> CommandResult:
 def _step_write_as_restricted() -> CommandResult:
     """Step 7: Attempt write as restricted user (should fail)."""
     cmd = (
-        f"sudo -u {DEMO_USER_RESTRICTED} bash -c '"
+        f"echo '{ssh_service._password}' | sudo -S -u {DEMO_USER_RESTRICTED} bash -c '"
         f"echo \"test data written by analyst\" > /mapr/$(hostname -f)/{DEMO_VOLUME_PATH}/analyst_test.txt'"
     )
     out, err, code = ssh_service.execute(cmd)
@@ -539,7 +539,7 @@ def _step_write_as_restricted() -> CommandResult:
 def _step_read_file_as_restricted() -> CommandResult:
     """Step 8: Read file as restricted user (should succeed)."""
     cmd = (
-        f"sudo -u {DEMO_USER_RESTRICTED} bash -c '"
+        f"echo '{ssh_service._password}' | sudo -S -u {DEMO_USER_RESTRICTED} bash -c '"
         f"cat /mapr/$(hostname -f)/{DEMO_VOLUME_PATH}/admin_test.txt'"
     )
     out, err, code = ssh_service.execute(cmd)
