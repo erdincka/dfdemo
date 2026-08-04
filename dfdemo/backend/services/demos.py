@@ -390,18 +390,30 @@ def setup_prerequisite(prereq_name: str) -> CommandResult:
                     success=True,  # Volume exists, so prerequisite is met
                 )
 
-        # Volume doesn't exist - create it
+        # Volume doesn't exist - create it with demo_admin as accountable entity
         result = mapr_api.create_volume(
             name=DEMO_VOLUME_NAME,
             path=DEMO_VOLUME_PATH,
             read_ace=f"g:{DEMO_GROUP}",
             write_ace=f"u:{DEMO_USER_ADMIN}",
+            tenant_user=DEMO_USER_ADMIN,
         )
         status = result.get("status", "ERROR")
         if status == "OK":
+            # After creation, set the volume owner to demo_admin:demogroup
+            owner_result = mapr_api.set_volume_owner(DEMO_VOLUME_NAME, f"{DEMO_USER_ADMIN}:{DEMO_GROUP}")
+            owner_status = owner_result.get("status", "ERROR")
+            owner_msg = ""
+            if owner_status == "OK":
+                owner_msg = f"\nVolume owner set to '{DEMO_USER_ADMIN}:{DEMO_GROUP}' successfully."
+            else:
+                owner_errors = owner_result.get("errors", [])
+                owner_err = "; ".join([e.get("desc", e.get("msg", str(e))) for e in owner_errors]) if owner_errors else str(owner_result)
+                owner_msg = f"\nWarning: Failed to set owner: {owner_err}"
+
             return CommandResult(
-                command=f"POST /rest/volume/create?name={DEMO_VOLUME_NAME}&path={DEMO_VOLUME_PATH}&readAce=g:{DEMO_GROUP}&writeAce=u:{DEMO_USER_ADMIN}",
-                stdout=f"Volume '{DEMO_VOLUME_NAME}' created successfully at path '{DEMO_VOLUME_PATH}'\n\nAPI Response: {json.dumps(result, indent=2)}",
+                command=f"POST /rest/volume/create?name={DEMO_VOLUME_NAME}&path={DEMO_VOLUME_PATH}&readAce=g:{DEMO_GROUP}&writeAce=u:{DEMO_USER_ADMIN}&tenantuser={DEMO_USER_ADMIN}\nPOST /rest/volume/modify?name={DEMO_VOLUME_NAME}&owner={DEMO_USER_ADMIN}:{DEMO_GROUP}",
+                stdout=f"Volume '{DEMO_VOLUME_NAME}' created successfully at path '{DEMO_VOLUME_PATH}' with accountable entity '{DEMO_USER_ADMIN}'.{owner_msg}\n\nAPI Response: {json.dumps(result, indent=2)}",
                 stderr="",
                 exit_code=0,
                 success=True,

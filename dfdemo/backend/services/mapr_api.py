@@ -314,6 +314,16 @@ class MapRAPI:
             params["writeAce"] = write_ace
         return self._post("/rest/volume/modify", params=params)
 
+    def set_volume_owner(self, volume_name: str, owner: str) -> dict:
+        """Set the owner of a volume.
+        
+        Args:
+            volume_name: Name of the volume
+            owner: Owner in format "user:group" e.g. "demo_admin:demogroup"
+        """
+        params = {"name": volume_name, "owner": owner}
+        return self._post("/rest/volume/modify", params=params)
+
 
 # Global singleton instance
 mapr_api = MapRAPI()
