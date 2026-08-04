@@ -103,8 +103,23 @@ export default function PrerequisiteCheck({ demo, onPassed, onBack }: Props) {
                           </span>
                         ) : (
                           <span className="alert alert-error" style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}>
-                            Fix failed: {fixResults[prereq.name].stderr}
+                            Fix failed
                           </span>
+                        )}
+                        {fixResults[prereq.name].command && (
+                          <pre className="mt-1" style={{ fontSize: '0.75rem', background: 'var(--surface)', padding: '0.5rem', borderRadius: '4px', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                            {fixResults[prereq.name].command}
+                          </pre>
+                        )}
+                        {fixResults[prereq.name].stdout && (
+                          <pre className="mt-1" style={{ fontSize: '0.75rem', background: 'var(--surface)', padding: '0.5rem', borderRadius: '4px', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                            {fixResults[prereq.name].stdout}
+                          </pre>
+                        )}
+                        {fixResults[prereq.name].stderr && (
+                          <pre className="mt-1" style={{ fontSize: '0.75rem', background: '#2d1b1b', color: '#f87171', padding: '0.5rem', borderRadius: '4px', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                            {fixResults[prereq.name].stderr}
+                          </pre>
                         )}
                       </div>
                     )}

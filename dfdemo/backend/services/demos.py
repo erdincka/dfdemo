@@ -288,11 +288,63 @@ def setup_prerequisite(prereq_name: str) -> CommandResult:
             success=True,
         )
 
+    # Handle volume creation via REST API (more reliable than maprcli over SSH)
+    if prereq_name == "demo_volume":
+        result = mapr_api.create_volume(
+            name=DEMO_VOLUME_NAME,
+            path=DEMO_VOLUME_PATH,
+            read_ace=f"g:{DEMO_GROUP}",
+            write_ace=f"u:{DEMO_USER_ADMIN}",
+        )
+        status = result.get("status", "ERROR")
+        if status == "OK":
+            return CommandResult(
+                command=f"POST /rest/volume/create?name={DEMO_VOLUME_NAME}&path={DEMO_VOLUME_PATH}&readAce=g:{DEMO_GROUP}&writeAce=u:{DEMO_USER_ADMIN}",
+                stdout=f"Volume '{DEMO_VOLUME_NAME}' created successfully at path '{DEMO_VOLUME_PATH}'\n\nAPI Response: {json.dumps(result, indent=2)}",
+                stderr="",
+                exit_code=0,
+                success=True,
+            )
+        else:
+            errors = result.get("errors", [])
+            error_msg = "; ".join([e.get("msg", str(e)) for e in errors]) if errors else str(result)
+            return CommandResult(
+                command=f"POST /rest/volume/create?name={DEMO_VOLUME_NAME}&path={DEMO_VOLUME_PATH}&readAce=g:{DEMO_GROUP}&writeAce=u:{DEMO_USER_ADMIN}",
+                stdout="",
+                stderr=f"Volume creation failed: {error_msg}\n\nFull API Response: {json.dumps(result, indent=2)}",
+                exit_code=1,
+                success=False,
+            )
+
+    # Handle table creation via REST API
+    if prereq_name == "demo_table":
+        result = mapr_api.create_table(DEMO_TABLE_PATH, "json", "p")
+        status = result.get("status", "ERROR")
+        if status == "OK":
+            return CommandResult(
+                command=f"POST /rest/table/create?path={DEMO_TABLE_PATH}&tabletype=json&defaultreadperm=p",
+                stdout=f"Table '{DEMO_TABLE_NAME}' created successfully at path '{DEMO_TABLE_PATH}'\n\nAPI Response: {json.dumps(result, indent=2)}",
+                stderr="",
+                exit_code=0,
+                success=True,
+            )
+        else:
+            errors = result.get("errors", [])
+            error_msg = "; ".join([e.get("msg", str(e)) for e in errors]) if errors else str(result)
+            return CommandResult(
+                command=f"POST /rest/table/create?path={DEMO_TABLE_PATH}&tabletype=json&defaultreadperm=p",
+                stdout="",
+                stderr=f"Table creation failed: {error_msg}\n\nFull API Response: {json.dumps(result, indent=2)}",
+                exit_code=1,
+                success=False,
+            )
+
+    # All other fixes run via SSH
     out, err, code = ssh_service.execute(target.fix_command)
     return CommandResult(
         command=target.fix_command,
-        stdout=out,
-        stderr=err,
+        stdout=out if out else "(no output)",
+        stderr=err if err else "",
         exit_code=code,
         success=code == 0,
     )
