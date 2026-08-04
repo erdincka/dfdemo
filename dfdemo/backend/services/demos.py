@@ -211,6 +211,23 @@ def check_prerequisites() -> list[Prerequisite]:
             ) if not exists else None,
         ))
 
+    # 3b. Check if demo users have cluster permissions
+    for username, perms in [(DEMO_USER_ADMIN, "admin"), (DEMO_USER_RESTRICTED, "login")]:
+        out, err, code = ssh_service.execute(
+            f"/opt/mapr/bin/maprcli acl show -type cluster -user {username} 2>/dev/null"
+        )
+        has_perms = code == 0 and username in out
+        perm_desc = "admin (create volume, manage tables)" if perms == "admin" else "login (read access)"
+        results.append(Prerequisite(
+            name=f"cluster_perm_{username}",
+            description=f"User '{username}' has cluster permissions ({perm_desc})",
+            status=PrerequisiteStatus.PASS if has_perms else PrerequisiteStatus.FAIL,
+            message=f"{username} {'has' if has_perms else 'does not have'} cluster {perms} permission",
+            fix_command=(
+                f"/opt/mapr/bin/maprcli acl add -type cluster -user {username}:{perms}"
+            ) if not has_perms else None,
+        ))
+
     # 4. Check if demo group exists
     out, err, code = ssh_service.execute(f"getent group {DEMO_GROUP} 2>/dev/null")
     group_exists = code == 0
