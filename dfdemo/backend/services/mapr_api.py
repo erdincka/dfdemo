@@ -80,9 +80,15 @@ class MapRAPI:
         return self._get("/rest/volume/list")
 
     def volume_exists(self, volume_name: str) -> bool:
-        """Check if a volume exists."""
-        result = self._get("/rest/volume/list", params={"filter": f"[name=={volume_name}]"})
-        return result.get("status") == "OK" and len(result.get("data", [])) > 0
+        """Check if a volume exists by listing all volumes and searching."""
+        # Use volume/list without filter (filter syntax causes 500 on some clusters)
+        result = self._get("/rest/volume/list", params={"limit": 500})
+        if result.get("status") == "OK":
+            volumes = result.get("data", [])
+            return any(v.get("volumename") == volume_name or v.get("name") == volume_name for v in volumes)
+        # Fallback: try volume/get endpoint
+        result2 = self._get("/rest/volume/get", params={"name": volume_name})
+        return result2.get("status") == "OK"
 
     def create_volume(
         self,
@@ -132,9 +138,23 @@ class MapRAPI:
         return self._post("/rest/table/create", params=params)
 
     def table_exists(self, path: str) -> bool:
-        """Check if a table exists."""
-        result = self._get("/rest/table/list", params={"filter": f"[path=={path}]"})
-        return result.get("status") == "OK" and len(result.get("data", [])) > 0
+        """Check if a table exists by listing tables on the volume."""
+        # Extract volume name from path (e.g., /secgovol/customer_data -> secgovol)
+        parts = path.strip("/").split("/")
+        if len(parts) < 2:
+            return False
+        volume_name = parts[0]
+        # List tables on the specific volume
+        result = self._get("/rest/table/list", params={"volume": volume_name, "limit": 500})
+        if result.get("status") == "OK":
+            tables = result.get("data", [])
+            return any(t.get("tablename") == path or t.get("path") == path for t in tables)
+        # Fallback: try without volume param
+        result2 = self._get("/rest/table/list", params={"limit": 500})
+        if result2.get("status") == "OK":
+            tables = result2.get("data", [])
+            return any(t.get("tablename") == path or t.get("path") == path for t in tables)
+        return False
 
     def list_tables(self) -> dict:
         """List all tables."""
