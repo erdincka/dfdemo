@@ -217,8 +217,15 @@ def check_prerequisites() -> list[Prerequisite]:
         has_perms = False
         if acl_result.get("status") == "OK":
             # Check if user appears in the cluster ACL with appropriate permission
-            acl_data = acl_result.get("data", {})
-            user_field = acl_data.get("user", "")
+            acl_data = acl_result.get("data", [])
+            # data can be a list of ACL entries or a dict
+            user_field = ""
+            if isinstance(acl_data, list):
+                for entry in acl_data:
+                    if isinstance(entry, dict):
+                        user_field += entry.get("user", "") + ","
+            elif isinstance(acl_data, dict):
+                user_field = acl_data.get("user", "")
             # ACL format: "user1:perm1,user2:perm2"
             has_perms = f"{username}:{perms}" in user_field or f"{username}:admin" in user_field
         perm_desc = "admin (create volume, manage tables)" if perms == "admin" else "login (read access)"
