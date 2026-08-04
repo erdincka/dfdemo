@@ -1,0 +1,26 @@
+services:
+  dfdemo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: local/dfdemo:1.0.0
+    container_name: dfdemo
+    hostname: dfdemo
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    # Required for NFS mount operations
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=Europe/London
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
