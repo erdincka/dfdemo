@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 # Demo constants
 DEMO_VOLUME_NAME = "secgovol"
-DEMO_VOLUME_PATH = "/secgovo"
+DEMO_VOLUME_PATH = "/secgovol"
 DEMO_TABLE_NAME = "customer_data"
 DEMO_TABLE_PATH = f"/{DEMO_VOLUME_NAME}/{DEMO_TABLE_NAME}"
 DEMO_USER_ADMIN = "demo_admin"
@@ -317,17 +317,37 @@ def setup_prerequisite(prereq_name: str) -> CommandResult:
             success=True,
         )
 
-    # Handle cluster permission setup via REST API
+    # Handle cluster permission setup via REST API (preserving existing permissions)
     if prereq_name.startswith("cluster_perm_"):
         username = prereq_name.replace("cluster_perm_", "")
         perms = "a" if username == DEMO_USER_ADMIN else "login"
-        result = mapr_api.set_cluster_acl(user=f"{username}:{perms}")
+
+        # First get current ACL to preserve existing permissions
+        current_acl = mapr_api.get_cluster_acl()
+        existing_user_acl = ""
+        if current_acl.get("status") == "OK":
+            acl_data = current_acl.get("data", [])
+            if isinstance(acl_data, list):
+                for entry in acl_data:
+                    if isinstance(entry, dict):
+                        existing_user_acl = entry.get("user", "")
+            elif isinstance(acl_data, dict):
+                existing_user_acl = acl_data.get("user", "")
+
+        # Build new ACL: preserve existing entries, add/update the target user
+        new_user_acl = existing_user_acl
+        # Remove existing entry for this user if present (to update it)
+        acl_parts = [p for p in existing_user_acl.split(",") if p and not p.startswith(f"{username}:")]
+        acl_parts.append(f"{username}:{perms}")
+        new_user_acl = ",".join(acl_parts)
+
+        result = mapr_api.set_cluster_acl(user=new_user_acl)
         status = result.get("status", "ERROR")
-        api_desc = f"POST /rest/acl/set?type=cluster&user={username}:{perms}"
+        api_desc = f"POST /rest/acl/set?type=cluster&user={new_user_acl}"
         if status == "OK":
             return CommandResult(
                 command=api_desc,
-                stdout=f"Cluster permission '{perms}' granted to '{username}' successfully.\n\nAPI Response: {json.dumps(result, indent=2)}",
+                stdout=f"Cluster permission '{perms}' granted to '{username}' successfully.\n\nPrevious ACL: {existing_user_acl}\nNew ACL: {new_user_acl}\n\nAPI Response: {json.dumps(result, indent=2)}",
                 stderr="",
                 exit_code=0,
                 success=True,
@@ -413,51 +433,38 @@ def setup_prerequisite(prereq_name: str) -> CommandResult:
                 success=False,
             )
 
-    # Handle table creation via SSH (maprcli handles volume mount paths correctly)
+    # Handle table creation via REST API only
     if prereq_name == "demo_table":
-        # First ensure the volume is mounted by checking the mount point
-        cluster_host = ssh_service.hostname
-        mount_check_cmd = f"ls /mapr/{cluster_host}{DEMO_VOLUME_PATH} 2>/dev/null"
-        mount_out, mount_err, mount_code = ssh_service.execute(mount_check_cmd)
+        # Ensure volume is mounted first via REST API
+        mount_result = mapr_api.mount_volume(DEMO_VOLUME_NAME)
+        # (mount may fail if already mounted - that's fine)
 
-        if mount_code != 0:
-            # Volume not mounted yet - try to mount it
-            mount_cmd = f"/opt/mapr/bin/maprcli volume mount -name {DEMO_VOLUME_NAME}"
-            mount_out2, mount_err2, mount_code2 = ssh_service.execute(mount_cmd)
-            if mount_code2 != 0:
-                # Try waiting a moment and checking again (auto-mount may be in progress)
-                import time
-                time.sleep(2)
-                mount_out, mount_err, mount_code = ssh_service.execute(mount_check_cmd)
-
-        # Now create the table using maprcli
-        table_cmd = f"/opt/mapr/bin/maprcli table create -path {DEMO_TABLE_PATH} -tabletype json -defaultreadperm p"
-        out, err, code = ssh_service.execute(table_cmd)
-
-        if code == 0:
+        # Create table via REST API
+        result = mapr_api.create_table(DEMO_TABLE_PATH, "json", "p")
+        api_desc = f"POST /rest/table/create?path={DEMO_TABLE_PATH}&tabletype=json&defaultreadperm=p"
+        if result.get("status") == "OK":
             return CommandResult(
-                command=table_cmd,
-                stdout=f"Table '{DEMO_TABLE_NAME}' created successfully at path '{DEMO_TABLE_PATH}'\n\nOutput: {out}",
+                command=api_desc,
+                stdout=f"Table '{DEMO_TABLE_NAME}' created successfully at path '{DEMO_TABLE_PATH}'\n\nAPI Response: {json.dumps(result, indent=2)}",
                 stderr="",
                 exit_code=0,
                 success=True,
             )
         else:
-            # Fallback: try REST API
-            result = mapr_api.create_table(DEMO_TABLE_PATH, "json", "p")
-            if result.get("status") == "OK":
+            errors = result.get("errors", [])
+            error_msg = "; ".join([e.get("desc", e.get("msg", str(e))) for e in errors]) if errors else str(result)
+            # If table already exists, treat as success
+            if "already exists" in error_msg.lower() or "exists" in error_msg.lower():
                 return CommandResult(
-                    command=f"POST /rest/table/create?path={DEMO_TABLE_PATH}&tabletype=json&defaultreadperm=p",
-                    stdout=f"Table '{DEMO_TABLE_NAME}' created successfully (via REST API)\n\nAPI Response: {json.dumps(result, indent=2)}",
+                    command=api_desc,
+                    stdout=f"Table '{DEMO_TABLE_NAME}' already exists (creation skipped).",
                     stderr="",
                     exit_code=0,
                     success=True,
                 )
-            errors = result.get("errors", [])
-            error_msg = "; ".join([e.get("desc", e.get("msg", str(e))) for e in errors]) if errors else str(result)
             return CommandResult(
-                command=f"{table_cmd}\n(fallback) POST /rest/table/create?path={DEMO_TABLE_PATH}&tabletype=json&defaultreadperm=p",
-                stdout=f"SSH output: {out}\nSSH stderr: {err}",
+                command=api_desc,
+                stdout="",
                 stderr=f"Table creation failed: {error_msg}\n\nFull API Response: {json.dumps(result, indent=2)}",
                 exit_code=1,
                 success=False,
