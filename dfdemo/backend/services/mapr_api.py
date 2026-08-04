@@ -5,6 +5,8 @@ import urllib.parse
 from typing import Optional
 import httpx
 
+from services.ssh import ssh_service
+
 logger = logging.getLogger(__name__)
 
 
@@ -225,20 +227,27 @@ class MapRAPI:
         return self._post_as_user("/rest/table/create", username, password, params=params)
 
     def table_exists(self, path: str) -> bool:
-        """Check if a table exists using table info endpoint."""
-        # Try the table info endpoint first (more reliable across versions)
+        """Check if a table exists using SSH CLI or REST API."""
+        if ssh_service.is_connected and ssh_service._password:
+            out, err, code = ssh_service.execute(
+                f"echo '{ssh_service._password}' | sudo -S -u mapr bash -c 'export MAPR_TICKETFILE_LOCATION=/opt/mapr/conf/mapruserticket; /opt/mapr/bin/maprcli table info -path {path} -json 2>/dev/null'"
+            )
+            if code == 0 and '"status":"OK"' in out.replace(" ", ""):
+                return True
+            out_fs, err_fs, code_fs = ssh_service.execute(
+                f"echo '{ssh_service._password}' | sudo -S -u mapr bash -c 'export MAPR_TICKETFILE_LOCATION=/opt/mapr/conf/mapruserticket; /opt/mapr/bin/hadoop fs -ls -d {path} 2>/dev/null'"
+            )
+            if code_fs == 0 and path in out_fs:
+                return True
+
         result = self._get("/rest/table/info", params={"path": path})
         if result.get("status") == "OK":
             return True
-        # Fallback: try table/list without params
-        result2 = self._get("/rest/table/list")
-        if result2.get("status") == "OK":
-            tables = result2.get("data", [])
-            return any(
-                t.get("tablename") == path or t.get("path") == path or
-                t.get("tablename", "").endswith(path.split("/")[-1])
-                for t in tables
-            )
+        errors = result.get("errors", [])
+        for e in errors:
+            desc = e.get("desc", e.get("msg", ""))
+            if any(term in desc.lower() for term in ["does not exist", "not found", "no such table", "invalid table"]):
+                return False
         return False
 
     def list_tables(self) -> dict:
@@ -254,6 +263,7 @@ class MapRAPI:
         try:
             response = httpx.get(
                 f"https://{self._hostname}:8243/api/v2/table/{table_encoded}",
+                headers={"Accept": "application/json"},
                 auth=auth,
                 verify=False,
                 timeout=30.0,
@@ -272,7 +282,7 @@ class MapRAPI:
             response = httpx.post(
                 f"https://{self._hostname}:8243/api/v2/table/{table_encoded}",
                 json=documents,
-                headers={"Content-Type": "application/json"},
+                headers={"Content-Type": "application/json", "Accept": "application/json"},
                 auth=auth,
                 verify=False,
                 timeout=30.0,
@@ -287,7 +297,7 @@ class MapRAPI:
 
     def set_cf_permission(self, table_path: str, cf_name: str = "default",
                           read_perm: str = None, write_perm: str = None,
-                          unmasked_read_perm: str = None) -> dict:
+                          unmasked_read_perm: str = None, admin_perm: str = None) -> dict:
         """Set permissions on a column family.
         
         Args:
@@ -296,6 +306,7 @@ class MapRAPI:
             read_perm: Read permission ACE, e.g. "u:demo_admin"
             write_perm: Write permission ACE
             unmasked_read_perm: Unmasked read permission ACE, e.g. "u:demo_admin"
+            admin_perm: Admin permission ACE, e.g. "u:demo_admin"
         """
         params = {"path": table_path, "cfname": cf_name}
         if read_perm:
@@ -304,7 +315,32 @@ class MapRAPI:
             params["writeperm"] = write_perm
         if unmasked_read_perm:
             params["unmaskedreadperm"] = unmasked_read_perm
-        return self._post("/rest/table/cf/edit", params=params)
+        if admin_perm:
+            params["adminperm"] = admin_perm
+        res = self._post("/rest/table/cf/edit", params=params)
+        if res.get("status") == "OK":
+            return res
+        # Fallback via SSH CLI using demo_admin ticket
+        if not ssh_service.is_connected:
+            ssh_service.connect(self._hostname, self._username, self._password)
+        cmd_args = [f"-path {table_path}", f"-cfname {cf_name}"]
+        if read_perm:
+            cmd_args.append(f'-readperm "{read_perm}"')
+        if write_perm:
+            cmd_args.append(f'-writeperm "{write_perm}"')
+        if unmasked_read_perm:
+            cmd_args.append(f'-unmaskedreadperm "{unmasked_read_perm}"')
+        if admin_perm:
+            cmd_args.append(f'-adminperm "{admin_perm}"')
+        out, err, code = ssh_service.execute(
+            f"echo '{ssh_service._password}' | sudo -S -u demo_admin bash -c '"
+            f"export MAPR_TICKETFILE_LOCATION=/tmp/demo_admin_ticket; "
+            f"echo \"Demo123!\" | /opt/mapr/bin/maprlogin password -user demo_admin >/dev/null 2>&1; "
+            f"/opt/mapr/bin/maprcli table cf edit {' '.join(cmd_args)} 2>&1'"
+        )
+        if code == 0:
+            return {"status": "OK", "message": "Updated via SSH as demo_admin"}
+        return res
 
     # ─── Dynamic Data Masking ────────────────────────────────────────────
 
@@ -320,7 +356,21 @@ class MapRAPI:
             "name": column,
             "datamask": datamask,
         }
-        return self._post("/rest/table/cf/column/datamask/set", params=params)
+        res = self._post("/rest/table/cf/column/datamask/set", params=params)
+        if res.get("status") == "OK":
+            return res
+        # Fallback via SSH CLI using demo_admin ticket
+        if not ssh_service.is_connected:
+            ssh_service.connect(self._hostname, self._username, self._password)
+        out, err, code = ssh_service.execute(
+            f"echo '{ssh_service._password}' | sudo -S -u demo_admin bash -c '"
+            f"export MAPR_TICKETFILE_LOCATION=/tmp/demo_admin_ticket; "
+            f"echo \"Demo123!\" | /opt/mapr/bin/maprlogin password -user demo_admin >/dev/null 2>&1; "
+            f"/opt/mapr/bin/maprcli table cf column datamask set -path {table_path} -cfname {cf_name} -name {column} -datamask {datamask} 2>&1'"
+        )
+        if code == 0 or "status\": \"OK\"" in out:
+            return {"status": "OK", "message": "Set datamask via SSH as demo_admin"}
+        return res
 
     def get_datamasks(self, table_path: str, cf_name: str = "default") -> dict:
         """Get current data masks on a table."""
@@ -380,7 +430,25 @@ class MapRAPI:
             params["readAce"] = read_ace
         if write_ace:
             params["writeAce"] = write_ace
-        return self._post("/rest/volume/modify", params=params)
+        res = self._post("/rest/volume/modify", params=params)
+        if res.get("status") == "OK":
+            return res
+        # Fallback via SSH superuser
+        if not ssh_service.is_connected:
+            ssh_service.connect(self._hostname, self._username, self._password)
+        cmd_args = [f"-name {volume_name}"]
+        if read_ace:
+            cmd_args.append(f'-readAce "{read_ace}"')
+        if write_ace:
+            cmd_args.append(f'-writeAce "{write_ace}"')
+        out, err, code = ssh_service.execute(
+            f"echo '{ssh_service._password}' | sudo -S -u mapr bash -c '"
+            f"export MAPR_TICKETFILE_LOCATION=/opt/mapr/conf/mapruserticket; "
+            f"/opt/mapr/bin/maprcli volume modify {' '.join(cmd_args)} 2>/dev/null'"
+        )
+        if code == 0:
+            return {"status": "OK", "message": "Updated volume ACE via SSH superuser"}
+        return res
 
     def set_volume_owner(self, volume_name: str, owner: str) -> dict:
         """Set the owner of a volume.
@@ -390,7 +458,20 @@ class MapRAPI:
             owner: Owner in format "user:group" e.g. "demo_admin:demogroup"
         """
         params = {"name": volume_name, "owner": owner}
-        return self._post("/rest/volume/modify", params=params)
+        res = self._post("/rest/volume/modify", params=params)
+        if res.get("status") == "OK":
+            return res
+        # Fallback via SSH superuser
+        if not ssh_service.is_connected:
+            ssh_service.connect(self._hostname, self._username, self._password)
+        out, err, code = ssh_service.execute(
+            f"echo '{ssh_service._password}' | sudo -S -u mapr bash -c '"
+            f"export MAPR_TICKETFILE_LOCATION=/opt/mapr/conf/mapruserticket; "
+            f"/opt/mapr/bin/maprcli volume modify -name {volume_name} -owner \"{owner}\" 2>/dev/null'"
+        )
+        if code == 0:
+            return {"status": "OK", "message": "Set volume owner via SSH superuser"}
+        return res
 
 
 # Global singleton instance

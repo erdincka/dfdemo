@@ -1,6 +1,6 @@
 ezua:
   virtualService:
-    endpoint: "dfdemo.${DOMAIN_NAME}"
+    endpoint: "dfdemo.demo.lon-pcai.twlon.com"
     istioGateway: "istio-system/ezaf-gateway"
 
 replicaCount: 1
