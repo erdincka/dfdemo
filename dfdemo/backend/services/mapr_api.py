@@ -253,10 +253,10 @@ class MapRAPI:
         return self._get("/rest/acl/show", params={"type": "cluster"})
 
     def set_cluster_acl(self, user: str = None, group: str = None) -> dict:
-        """Set cluster-level ACL permissions.
+        """Set cluster-level ACL permissions (WARNING: overrides existing ACL).
         
         Args:
-            user: Format "username:permission" e.g. "demo_admin:admin"
+            user: Format "username:permission" e.g. "demo_admin:a"
             group: Format "groupname:permission" e.g. "demogroup:login"
         """
         params = {"type": "cluster"}
@@ -265,6 +265,20 @@ class MapRAPI:
         if group:
             params["group"] = group
         return self._post("/rest/acl/set", params=params)
+
+    def edit_cluster_acl(self, user: str = None, group: str = None) -> dict:
+        """Edit (append to) cluster-level ACL permissions without overriding existing.
+        
+        Args:
+            user: Format "username:permission" e.g. "demo_admin:a"
+            group: Format "groupname:permission" e.g. "demogroup:login"
+        """
+        params = {"type": "cluster"}
+        if user:
+            params["user"] = user
+        if group:
+            params["group"] = group
+        return self._post("/rest/acl/edit", params=params)
 
     # ─── ACE Operations ──────────────────────────────────────────────────
 

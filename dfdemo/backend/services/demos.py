@@ -317,37 +317,19 @@ def setup_prerequisite(prereq_name: str) -> CommandResult:
             success=True,
         )
 
-    # Handle cluster permission setup via REST API (preserving existing permissions)
+    # Handle cluster permission setup via REST API (acl/edit appends without overriding)
     if prereq_name.startswith("cluster_perm_"):
         username = prereq_name.replace("cluster_perm_", "")
         perms = "a" if username == DEMO_USER_ADMIN else "login"
 
-        # First get current ACL to preserve existing permissions
-        current_acl = mapr_api.get_cluster_acl()
-        existing_user_acl = ""
-        if current_acl.get("status") == "OK":
-            acl_data = current_acl.get("data", [])
-            if isinstance(acl_data, list):
-                for entry in acl_data:
-                    if isinstance(entry, dict):
-                        existing_user_acl = entry.get("user", "")
-            elif isinstance(acl_data, dict):
-                existing_user_acl = acl_data.get("user", "")
-
-        # Build new ACL: preserve existing entries, add/update the target user
-        new_user_acl = existing_user_acl
-        # Remove existing entry for this user if present (to update it)
-        acl_parts = [p for p in existing_user_acl.split(",") if p and not p.startswith(f"{username}:")]
-        acl_parts.append(f"{username}:{perms}")
-        new_user_acl = ",".join(acl_parts)
-
-        result = mapr_api.set_cluster_acl(user=new_user_acl)
+        # Use acl/edit which appends to existing ACL without overriding
+        result = mapr_api.edit_cluster_acl(user=f"{username}:{perms}")
         status = result.get("status", "ERROR")
-        api_desc = f"POST /rest/acl/set?type=cluster&user={new_user_acl}"
+        api_desc = f"POST /rest/acl/edit?type=cluster&user={username}:{perms}"
         if status == "OK":
             return CommandResult(
                 command=api_desc,
-                stdout=f"Cluster permission '{perms}' granted to '{username}' successfully.\n\nPrevious ACL: {existing_user_acl}\nNew ACL: {new_user_acl}\n\nAPI Response: {json.dumps(result, indent=2)}",
+                stdout=f"Cluster permission '{perms}' granted to '{username}' successfully (existing permissions preserved).\n\nAPI Response: {json.dumps(result, indent=2)}",
                 stderr="",
                 exit_code=0,
                 success=True,
